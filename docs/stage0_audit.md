@@ -8,13 +8,15 @@ All access checks, sizes, versions, and timings below were **empirically verifie
 
 ## 1. Machine reality check
 
-| Spec | Value | Implication |
-|---|---|---|
-| CPU | 16 cores | Fine for parallel loci |
-| **RAM** | **15.6 GB total (~12 GB in use at audit time)** | ⚠️ The project brief said 64 GB. `free -h` reports 15 GiB. This caps concurrent SuSiE/LD jobs at ~2–4 (an 8k-SNP LD matrix ≈ 0.5 GB as float64). Workable, but big runs need other apps closed — or the brief referred to a different machine. **Please confirm.** |
-| Disk | 175 GB free / 458 GB | Hybrid data strategy peaks at ~85 GB → OK |
-| GPU | RTX 3070 Laptop 8 GB | Not needed for this pipeline |
-| conda | 26.1.1, libmamba solver | Fast solves; no mamba needed |
+Three machines on the tailnet, all verified reachable via non-interactive SSH (specs measured directly):
+
+| Machine (ssh alias) | CPU | RAM | Free disk | GPU | Role |
+|---|---|---|---|---|---|
+| Laptop `connor-alienware-m15-r6` (this machine) | 16 cores | 15.6 GB (~12 in use) | 175 GB | RTX 3070 Laptop 8 GB | Dev/driving machine; audit ran here |
+| `claude-machine` / `box` | 4 cores | 31 GB (28 available) | 353 GB | GTX 1080 Ti 11 GB | Long-running downloads / background jobs |
+| **`workstation`** | **16 cores** | **62 GB (51 available)** | **342 GB** | RTX 5050 8 GB + RTX 3070 8 GB | **Recommended compute host for Stages 1–2** |
+
+**Recommendation:** clone the repo on `workstation` and run the Snakemake pipeline there — 16 cores + 62 GB removes the RAM cap on concurrent SuSiE/LD jobs (~12–14 workers instead of 3–4), and 342 GB free swallows the ~85 GB data footprint with room to spare. The laptop stays the editor/orchestrator. GPUs are not needed for this pipeline. conda 26.1.1 (libmamba) here; envs recreate on the workstation from the committed lockfile.
 
 ## 2. Data resources — access verified
 
@@ -61,14 +63,14 @@ Env `scz-coloc-audit` created from scratch (conda-forge + bioconda, ~2.3 GB, loc
 | LD matrices cache (287 loci × ~0.5 GB, pruned as we go) + results | ~15 GB |
 | **Peak total** | **~85 GB** (fits in 175 GB free) |
 
-**Runtime** (16 cores; RAM caps heavy R jobs at ~3–4 workers):
+**Runtime** (on `workstation`: 16 cores, 62 GB → ~12 concurrent heavy R jobs; on this laptop the SuSiE/FINEMAP rows stretch ~3×):
 
 | Step | Estimate |
 |---|---|
 | Downloads (MetaBrain 25 GB is the long pole) | 1–3 h, bandwidth-dependent |
 | Region extraction, remote tabix: 287 loci × ~17 datasets ≈ 4.9k queries × 6.6 s | ~9 h serial → **~1.5 h at 8 streams** |
 | coloc.abf: ~10⁵ locus–gene–tissue tests (~ms each) | < 1 h |
-| GWAS-side SuSiE: per-locus LD (plink2) + `susie_rss` | ~2–3 h at 3–4 workers |
+| GWAS-side SuSiE: per-locus LD (plink2) + `susie_rss` | ~1 h at 12 workers |
 | FINEMAP over same loci | similar |
 | coloc-SuSiE + fastENLOC | < 2 h |
 | PolyFun (optional, UKB LD priors) | +55 GB transient download; add ~1 day; defer unless needed |
@@ -86,7 +88,7 @@ Env `scz-coloc-audit` created from scratch (conda-forge + bioconda, ~2.3 GB, loc
 
 ## 6. Risks and open questions
 
-1. **RAM discrepancy** — 15.6 GB measured vs 64 GB in the brief. Pipeline is planned around 15.6 GB (3–4 concurrent heavy jobs). If a 64 GB machine exists, parallelism scales up trivially.
+1. ~~RAM discrepancy~~ **Resolved:** the 64 GB in the brief is the `workstation` desktop (verified: 62 GB, 16 cores, 342 GB free), reachable over Tailscale SSH. Pipeline targets that machine; the runtime table below already fits comfortably and Stage 2 fine-mapping drops to roughly an hour at 12+ workers.
 2. **Reference-panel LD mismatch** (1000G n=503 vs PGC3 meta cohorts) can produce spurious SuSiE credible sets on the GWAS side. Mitigations: `susie_rss` diagnostic (`estimate_residual_variance`, lambda check), flag non-converging loci, optional PolyFun/UKB-LD sensitivity arm, and coloc.abf (LD-free) always reported alongside.
 3. **MetaBrain betas/SEs are Z-derived**, not primary regression estimates (their own documentation) — acceptable for coloc, but the report must state it.
 4. **eQTL Catalogue etiquette/rate limits** unknown — cap at ~8 concurrent streams, cache everything, never re-query in CI.
