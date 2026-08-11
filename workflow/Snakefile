@@ -653,6 +653,20 @@ rule aggregate_stage2:
         "--out-summary {output.summary}"
 
 
+rule fig_stage2:
+    input:
+        explanations=f"{RES}/stage2/explanations.tsv",
+        summary=f"{RES}/stage2/stage2_summary.json",
+    output:
+        png=f"{RES}/stage2/fig_stage2.png",
+        pdf=f"{RES}/stage2/fig_stage2.pdf",
+    params:
+        prefix=f"{RES}/stage2/fig_stage2"
+    shell:
+        "python scripts/fig_stage2.py --explanations {input.explanations} "
+        "--summary {input.summary} --out-prefix {params.prefix}"
+
+
 # -------------------------------------------------------------- aggregation
 def stage1_coloc_files(wildcards):
     files = []

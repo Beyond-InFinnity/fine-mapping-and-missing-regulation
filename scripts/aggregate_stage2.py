@@ -126,6 +126,12 @@ def main() -> None:
     ex["coloc_bryois_any"] = ex["best_pp4_bryois"].ge(thr)
     ex["rescued_by_susie"] = (~ex["coloc_any_brain_abf"].astype(bool)
                               & ex["best_pp4_susie"].ge(thr))
+    # demotion: abf-colocalized within the SAME 6 datasets, but multi-signal
+    # analysis separates the signals (single-causal-variant inflation)
+    abf_same6 = [c for c in args.coloc_susie_datasets.split(",") if c in ex]
+    ex["best_pp4_abf_same6"] = ex[abf_same6].max(axis=1)
+    ex["demoted_by_susie"] = (ex["best_pp4_abf_same6"].ge(thr)
+                              & ex["best_pp4_susie"].lt(0.5))
 
     miss = ~ex["coloc_any_brain_abf"].astype(bool)
 
@@ -143,6 +149,8 @@ def main() -> None:
         "frac_multi_cs_coloc": float(multi[~miss].mean()),
         "fisher_or": float(fisher[0]), "fisher_p": float(fisher[1]),
         "n_rescued_by_coloc_susie": int(ex["rescued_by_susie"].sum()),
+        "n_demoted_by_coloc_susie": int(ex["demoted_by_susie"].sum()),
+        "n_abf_coloc_same6": int(ex["best_pp4_abf_same6"].ge(thr).sum()),
         "n_susie_not_converged": int((~ex["susie_converged"].astype(bool)).sum()),
     }
 
