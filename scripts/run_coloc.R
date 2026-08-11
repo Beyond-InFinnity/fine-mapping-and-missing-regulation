@@ -110,7 +110,14 @@ if (opts$source_type == "eqtl_catalogue") {
     eq <- eq[is.finite(beta) & is.finite(se) & se > 0]
     eq[, n_snp := vapply(strsplit(DatasetsNrSamples, ";", fixed = TRUE),
                          function(x) sum(as.numeric(x[x != "-"])), 0.0)]
-    stopifnot(all(eq$n_snp > 0))
+    # rows tested in zero contributing datasets (DatasetsNrSamples all "-")
+    # carry no information; drop them visibly
+    n_zero_n <- sum(eq$n_snp <= 0)
+    if (n_zero_n > 0) {
+      message(sprintf("dropping %d/%d rows with no contributing datasets",
+                      n_zero_n, nrow(eq)))
+      eq <- eq[n_snp > 0]
+    }
     eq[, key := variant_key(SNPChr, SNPChrPos, RefAllele, AltAllele)]
     eq[, gene := sub("\\..*$", "", ProbeName)]
     eq[, gene_symbol := HGNCName]
