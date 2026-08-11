@@ -1,0 +1,370 @@
+# ============================================================================
+# Stage 1 — SCZ GWAS x brain eQTL colocalization baseline
+# Run from the repository root:  snakemake -s workflow/Snakefile --cores N \
+#     --resources net=8
+# ============================================================================
+import csv
+import os
+
+configfile: "config/config.yaml"
+
+DATA = config["paths"]["data"]
+RES = config["paths"]["results"]
+UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+
+
+def load_datasets():
+    with open(config["datasets_tsv"]) as f:
+        rows = list(csv.DictReader(
+            (ln for ln in f if not ln.startswith("#")), delimiter="\t"))
+    return {r["dataset_id"]: r for r in rows}
+
+
+DATASETS = load_datasets()
+STAGE1_EQC = [d for d, r in DATASETS.items()
+              if r["stage"] == "1" and r["source_type"] == "eqtl_catalogue"]
+STAGE1_ALL = STAGE1_EQC + [d for d, r in DATASETS.items()
+                           if r["stage"] == "1" and r["source_type"] == "metabrain"]
+METABRAIN_ID = "MetaBrain_Cortex_EUR"
+GTEX_CORTEX_ID = "QTD000171"
+
+_LOCI_CACHE = {}
+
+
+def loci_rows(path):
+    """Read the loci table (input functions run after the checkpoint)."""
+    if path not in _LOCI_CACHE:
+        with open(path) as f:
+            _LOCI_CACHE[path] = {r["locus_id"]: r
+                                 for r in csv.DictReader(f, delimiter="\t")}
+    return _LOCI_CACHE[path]
+
+
+def analysed_loci():
+    path = checkpoints.loci_hg38.get().output[0]
+    rows = loci_rows(path)
+    ids = [l for l, r in rows.items() if r["status"] == "pass"]
+    if config["locus_filter"]:
+        keep = set(config["locus_filter"])
+        unknown = keep - set(ids)
+        assert not unknown, f"locus_filter ids not found among pass loci: {unknown}"
+        ids = [l for l in ids if l in keep]
+    return ids
+
+
+def locus_field(locus, field):
+    path = checkpoints.loci_hg38.get().output[0]
+    return loci_rows(path)[locus][field]
+
+
+wildcard_constraints:
+    locus=r"[0-9]+-[A-Za-z0-9\-]+",
+    chrom=r"[0-9]+",
+
+
+rule all:
+    input:
+        f"{RES}/stage1/per_locus_table.tsv",
+        f"{RES}/stage1/summary.json",
+        f"{RES}/stage1/fig_stage1.png",
+
+
+rule figure:
+    input:
+        per_locus=f"{RES}/stage1/per_locus_table.tsv",
+        summary=f"{RES}/stage1/summary.json",
+    output:
+        png=f"{RES}/stage1/fig_stage1.png",
+        pdf=f"{RES}/stage1/fig_stage1.pdf",
+    params:
+        prefix=f"{RES}/stage1/fig_stage1"
+    shell:
+        "python scripts/fig_stage1.py --per-locus {input.per_locus} "
+        "--summary {input.summary} --out-prefix {params.prefix}"
+
+
+# ---------------------------------------------------------------- downloads
+rule download_supp_zip:
+    output:
+        f"{DATA}/raw/loci/trubetskoy_supp.zip"
+    params:
+        url=config["loci"]["supp_zip_url"],
+        sha=config["loci"]["supp_zip_sha256"],
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL -A '{UA}' --retry 3 -o {output} '{params.url}'
+        echo '{params.sha}  {output}' | sha256sum -c -
+        """
+
+
+rule extract_table_s3:
+    input:
+        f"{DATA}/raw/loci/trubetskoy_supp.zip"
+    output:
+        f"{DATA}/raw/loci/supp_table_3.xls"
+    params:
+        inner=config["loci"]["table_path_in_zip"]
+    shell:
+        "unzip -p {input} '{params.inner}' > {output}"
+
+
+rule parse_loci:
+    input:
+        f"{DATA}/raw/loci/supp_table_3.xls"
+    output:
+        f"{DATA}/derived/loci_hg19.tsv"
+    params:
+        sheet=config["loci"]["sheet_name"],
+        n=config["loci"]["expected_n_loci"],
+        mhc_chrom=config["loci"]["mhc_chrom"],
+        mhc_start=config["loci"]["mhc_start_hg19"],
+        mhc_end=config["loci"]["mhc_end_hg19"],
+        exclude_mhc=str(config["loci"]["exclude_mhc"]).lower(),
+    shell:
+        "python scripts/parse_loci.py --xls {input} --sheet '{params.sheet}' "
+        "--expected-n-loci {params.n} --mhc-chrom {params.mhc_chrom} "
+        "--mhc-start {params.mhc_start} --mhc-end {params.mhc_end} "
+        "--exclude-mhc {params.exclude_mhc} --out {output}"
+
+
+rule download_gwas:
+    output:
+        f"{DATA}/raw/gwas/pgc3_scz_primary_autosome.tsv.gz"
+    params:
+        url=config["gwas"]["url"]
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} '{params.url}'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule download_chain:
+    output:
+        f"{DATA}/raw/liftover/hg19ToHg38.over.chain.gz"
+    params:
+        url=config["liftover"]["chain_url"]
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} '{params.url}'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+# ------------------------------------------------------------ harmonization
+rule harmonize_gwas:
+    input:
+        raw=f"{DATA}/raw/gwas/pgc3_scz_primary_autosome.tsv.gz",
+        chain=f"{DATA}/raw/liftover/hg19ToHg38.over.chain.gz",
+    output:
+        hg38=f"{DATA}/derived/gwas/pgc3.hg38.tsv.gz",
+        hg38_tbi=f"{DATA}/derived/gwas/pgc3.hg38.tsv.gz.tbi",
+        hg19=f"{DATA}/derived/gwas/pgc3.hg19.tsv.gz",
+        meta=f"{DATA}/derived/gwas/pgc3.meta.json",
+    params:
+        cols=",".join(config["gwas"]["expected_columns"]),
+        n=config["gwas"]["expected_n_variants"],
+        min_lift=config["gwas"]["min_lift_rate"],
+        prefix=f"{DATA}/derived/gwas/pgc3",
+    threads: 4
+    shell:
+        "python scripts/harmonize_gwas.py --raw-gz {input.raw} "
+        "--chain {input.chain} --expected-columns {params.cols} "
+        "--expected-n-variants {params.n} --min-lift-rate {params.min_lift} "
+        "--out-prefix {params.prefix} --tmpdir {resources.tmpdir}/pgc3_harmonize"
+
+
+checkpoint loci_hg38:
+    input:
+        loci=f"{DATA}/derived/loci_hg19.tsv",
+        gwas=f"{DATA}/derived/gwas/pgc3.hg38.tsv.gz",
+        chain=f"{DATA}/raw/liftover/hg19ToHg38.over.chain.gz",
+    output:
+        f"{DATA}/derived/loci_hg38.tsv"
+    params:
+        window=config["coloc"]["window_bp"]
+    shell:
+        "python scripts/make_loci_hg38.py --loci {input.loci} "
+        "--gwas-hg38 {input.gwas} --chain {input.chain} "
+        "--window-bp {params.window} --tmpdir {resources.tmpdir}/loci_hg38 "
+        "--out {output}"
+
+
+# --------------------------------------------------------- region extraction
+rule gwas_region:
+    input:
+        gwas=f"{DATA}/derived/gwas/pgc3.hg38.tsv.gz",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+    output:
+        f"{DATA}/regions/gwas/{{locus}}.tsv"
+    params:
+        region=lambda wc: "{}:{}-{}".format(
+            locus_field(wc.locus, "chrom"),
+            locus_field(wc.locus, "region_start_hg38"),
+            locus_field(wc.locus, "region_end_hg38")),
+    shell:
+        "tabix -h {input.gwas} {params.region} > {output}"
+
+
+rule fetch_eqtlcat_region:
+    input:
+        loci=f"{DATA}/derived/loci_hg38.tsv"
+    output:
+        f"{DATA}/regions/{{dataset}}/{{locus}}.tsv.gz"
+    wildcard_constraints:
+        dataset=r"QTD[0-9]+"
+    params:
+        url=lambda wc: DATASETS[wc.dataset]["sumstats_url"],
+        region=lambda wc: "{}:{}-{}".format(
+            locus_field(wc.locus, "chrom"),
+            locus_field(wc.locus, "region_start_hg38"),
+            locus_field(wc.locus, "region_end_hg38")),
+        retries=config["network"]["retries"],
+    resources:
+        net=1
+    shell:
+        "bash scripts/fetch_eqtl_region.sh '{params.url}' '{params.region}' "
+        "{output} {params.retries}"
+
+
+rule download_metabrain_chr:
+    output:
+        f"{DATA}/raw/metabrain/{config['metabrain']['file_pattern']}"
+    params:
+        url=lambda wc: "{}/{}".format(
+            config["metabrain"]["base_url"],
+            config["metabrain"]["file_pattern"].format(chrom=wc.chrom)),
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -C - -o {output} '{params.url}'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule metabrain_intervals:
+    input:
+        loci=f"{DATA}/derived/loci_hg38.tsv"
+    output:
+        f"{DATA}/derived/metabrain_intervals/chr{{chrom}}.tsv"
+    run:
+        rows = loci_rows(input.loci)
+        wanted = [r for r in rows.values()
+                  if r["status"] == "pass" and r["chrom"] == wildcards.chrom]
+        with open(output[0], "w") as f:
+            for r in wanted:
+                f.write(f"{r['locus_id']}\t{r['region_start_hg38']}\t"
+                        f"{r['region_end_hg38']}\n")
+        assert wanted, f"no pass loci on chr{wildcards.chrom}; " \
+            "this rule should not have been requested"
+
+
+rule extract_metabrain_chr:
+    input:
+        gz=f"{DATA}/raw/metabrain/{config['metabrain']['file_pattern']}",
+        intervals=f"{DATA}/derived/metabrain_intervals/chr{{chrom}}.tsv",
+    output:
+        flag=touch(f"{DATA}/regions/metabrain/chr{{chrom}}.done")
+    params:
+        outdir=f"{DATA}/regions/metabrain/chr{{chrom}}",
+        expected_header="\t".join(config["metabrain"]["expected_columns"]),
+    shell:
+        r"""
+        mkdir -p {params.outdir}
+        obs_header=$(zcat {input.gz} | head -1)
+        if [ "$obs_header" != "$(printf '%s' '{params.expected_header}')" ]; then
+            echo "FATAL: MetaBrain header mismatch on chr{wildcards.chrom}" >&2
+            echo "observed: $obs_header" >&2
+            exit 1
+        fi
+        zcat {input.gz} | awk -v ivf={input.intervals} -v outdir={params.outdir} \
+            -f scripts/extract_intervals.awk
+        gzip -f {params.outdir}/*.tsv
+        """
+
+
+# -------------------------------------------------------------------- coloc
+rule coloc_eqtlcat:
+    input:
+        gwas=f"{DATA}/regions/gwas/{{locus}}.tsv",
+        eqtl=f"{DATA}/regions/{{dataset}}/{{locus}}.tsv.gz",
+    output:
+        f"{RES}/coloc/{{dataset}}/{{locus}}.tsv"
+    wildcard_constraints:
+        dataset=r"QTD[0-9]+"
+    params:
+        n=lambda wc: DATASETS[wc.dataset]["sample_size"],
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc.R --gwas-region {input.gwas} "
+        "--eqtl-region {input.eqtl} --source-type eqtl_catalogue "
+        "--dataset-id {wildcards.dataset} --sample-size {params.n} "
+        "--locus-id {wildcards.locus} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
+
+
+rule coloc_metabrain:
+    input:
+        gwas=f"{DATA}/regions/gwas/{{locus}}.tsv",
+        flag=lambda wc: (f"{DATA}/regions/metabrain/"
+                         f"chr{locus_field(wc.locus, 'chrom')}.done"),
+    output:
+        f"{RES}/coloc/{METABRAIN_ID}/{{locus}}.tsv"
+    params:
+        eqtl=lambda wc: (f"{DATA}/regions/metabrain/"
+                         f"chr{locus_field(wc.locus, 'chrom')}/{wc.locus}.tsv.gz"),
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc.R --gwas-region {input.gwas} "
+        "--eqtl-region {params.eqtl} --source-type metabrain "
+        f"--dataset-id {METABRAIN_ID} --sample-size NA "
+        "--locus-id {wildcards.locus} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
+
+
+# -------------------------------------------------------------- aggregation
+def stage1_coloc_files(wildcards):
+    files = []
+    for locus in analysed_loci():
+        for ds in STAGE1_ALL:
+            files.append(f"{RES}/coloc/{ds}/{locus}.tsv")
+    return files
+
+
+rule aggregate:
+    input:
+        coloc=stage1_coloc_files,
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+        datasets=config["datasets_tsv"],
+    output:
+        gene_level=f"{RES}/stage1/coloc_gene_level.tsv.gz",
+        per_locus=f"{RES}/stage1/per_locus_table.tsv",
+        summary=f"{RES}/stage1/summary.json",
+    params:
+        thr=config["coloc"]["pp4_threshold"],
+        locus_filter=lambda wc: ",".join(config["locus_filter"] or []),
+        coloc_dir=f"{RES}/coloc",
+    shell:
+        "python scripts/aggregate_stage1.py --loci {input.loci} "
+        "--datasets {input.datasets} --coloc-dir {params.coloc_dir} "
+        "--locus-filter '{params.locus_filter}' --pp4-threshold {params.thr} "
+        f"--gtex-cortex-id {GTEX_CORTEX_ID} --metabrain-id {METABRAIN_ID} "
+        "--out-gene-level {output.gene_level} "
+        "--out-per-locus {output.per_locus} --out-summary {output.summary}"

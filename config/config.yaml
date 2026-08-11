@@ -1,0 +1,84 @@
+# ============================================================================
+# Stage 1 configuration — SCZ GWAS x brain eQTL colocalization baseline
+# Every parameter that could affect scientific conclusions lives here.
+# ============================================================================
+
+paths:
+  data: "data"            # raw + derived data (gitignored, regenerable)
+  results: "results"      # analysis outputs (gitignored, regenerable)
+
+# ---------------------------------------------------------------------------
+# GWAS: PGC3 SCZ (Trubetskoy et al. 2022), primary autosome meta-analysis.
+# "primary" (EUR+EAS) chosen because the 287 loci are defined on it;
+# EUR-only subset is a Stage 2 sensitivity option.
+# ---------------------------------------------------------------------------
+gwas:
+  figshare_file_id: 34517861
+  url: "https://ndownloader.figshare.com/files/34517861"
+  expected_n_variants: 7585077        # from ##nVariants header line
+  expected_columns: ["CHROM", "ID", "POS", "A1", "A2", "FCAS", "FCON",
+                     "IMPINFO", "BETA", "SE", "PVAL", "NGT", "DIRE",
+                     "NCAS", "NCON", "NEFFDIV2"]
+  build: "GRCh37"
+  n_cases: 67390                      # header totals; per-SNP NCAS/NCON used in analysis
+  n_controls: 94015
+  min_info: 0.0                       # PGC released pre-filtered stats; no extra filter
+  min_lift_rate: 0.98                 # hard floor on hg19->hg38 mapping success
+
+# ---------------------------------------------------------------------------
+# Locus definitions: Trubetskoy Supplementary Table 3 (287 GWS loci, hg19)
+# ---------------------------------------------------------------------------
+loci:
+  supp_zip_url: "https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-022-04434-5/MediaObjects/41586_2022_4434_MOESM11_ESM.zip"
+  supp_zip_sha256: "030d636b52793e751fb73617fb2d6a76d4b3a3fb7d69cdfbb98b83981c5ff4d8"
+  table_path_in_zip: "2020-08-14908C-s11/Supplementary Table 3.xls"
+  sheet_name: "ST3 -  discovery + replication"
+  expected_n_loci: 287
+  # MHC region (hg19): loci whose hg19 bounds overlap this are excluded from
+  # colocalization (extreme LD invalidates the analysis) but kept in the table
+  # with status "excluded_mhc".
+  mhc_chrom: 6
+  mhc_start_hg19: 25000000
+  mhc_end_hg19: 34000000
+  exclude_mhc: true
+
+liftover:
+  chain_url: "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz"
+
+# ---------------------------------------------------------------------------
+# Colocalization parameters
+# ---------------------------------------------------------------------------
+coloc:
+  window_bp: 1000000        # region = index SNP +/- window_bp (GRCh38)
+  p1: 1.0e-4                # coloc.abf default priors
+  p2: 1.0e-4
+  p12: 1.0e-5
+  pp4_threshold: 0.8        # per project brief
+  min_overlap_variants: 25  # min shared variants (GWAS x eQTL gene) to attempt coloc
+
+# ---------------------------------------------------------------------------
+# eQTL datasets: registry in config/datasets.tsv. Stage 1 = stage == "1" rows.
+# ---------------------------------------------------------------------------
+datasets_tsv: "config/datasets.tsv"
+
+metabrain:
+  # per-chromosome files: {base}/2020-05-26-Cortex-EUR-{chr}-biogenformat.txt.gz
+  base_url: "https://download.metabrain.nl/2020-05-26-release/2020-05-26-CisEQTLSummaryStats/2020-05-26-Cortex-EUR"
+  file_pattern: "2020-05-26-Cortex-EUR-{chrom}-biogenformat.txt.gz"
+  expected_columns: ["PValue", "SNPName", "SNPChr", "SNPChrPos", "ProbeName",
+                     "ProbeChr", "ProbeCenterChrPos", "CisTrans", "RefAllele",
+                     "AltAllele", "AlleleAssessed", "OverallZScore",
+                     "DatasetsWhereSNPProbePairIsAvailableAndPassesQC",
+                     "DatasetsZScores", "DatasetsNrSamples", "HGNCName",
+                     "IncludedDatasetsCorrelationCoeff"]
+  build: "GRCh38"
+  # MetaBrain public release has no allele frequencies; coloc uses
+  # p-value + per-SNP N from MetaBrain plus MAF taken from PGC3 control
+  # frequencies (EUR-dominated) for the same variant. Documented approximation.
+
+network:
+  max_concurrent_downloads: 8
+  retries: 3
+
+# Set to a list of locus_ids to restrict the run (smoke tests); null = all loci
+locus_filter: null

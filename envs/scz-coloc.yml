@@ -1,0 +1,32 @@
+# Canonical pipeline environment. A fully solved lockfile for linux-64 is
+# kept alongside as scz-coloc-audit.lock.yml (regenerate per machine with
+# `conda env export`).
+name: scz-coloc
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - python=3.11
+  - r-base=4.3
+  - r-susier=0.14.2
+  - r-coloc=5.2.3
+  - r-data.table
+  - r-optparse
+  - snakemake-minimal=9.25.1
+  - htslib=1.24
+  - bcftools=1.24
+  - plink
+  - plink2
+  - pandas
+  - numpy
+  - scipy
+  - pyarrow
+  - matplotlib-base
+  - gsl          # fastENLOC build dependency (Stage 2)
+  - zlib
+  - pip
+  - pip:
+      - CrossMap==0.7.3
+      - openpyxl
+      - xlrd
