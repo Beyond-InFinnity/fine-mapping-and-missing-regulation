@@ -99,6 +99,14 @@ coloc_susie:
   datasets: ["QTD000171", "QTD000176", "QTD000051", "QTD000075",
              "QTD000434", "QTD000579"]
 
+annotations:
+  # Roadmap 15-state chromHMM, hg38lift. Fetal brain male/female + adult
+  # DLPFC as the matched adult contrast.
+  chromhmm_url_pattern: "https://egg2.wustl.edu/roadmap/data/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/{eid}_15_coreMarks_hg38lift_mnemonics.bed.gz"
+  fetal_eids: ["E081", "E082"]
+  adult_eids: ["E073"]
+  regulatory_states: ["1_TssA", "2_TssAFlnk", "6_EnhG", "7_Enh"]
+
 network:
   max_concurrent_downloads: 8
   retries: 3

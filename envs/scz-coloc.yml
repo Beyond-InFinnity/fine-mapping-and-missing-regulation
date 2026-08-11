@@ -13,6 +13,7 @@ dependencies:
   - r-coloc=5.2.3
   - r-data.table
   - r-r.utils        # fread gz support
+  - r-jsonlite
   - r-optparse
   - snakemake-minimal=9.25.1
   - htslib=1.24
@@ -22,6 +23,7 @@ dependencies:
   - pandas
   - numpy
   - scipy
+  - statsmodels
   - pyarrow
   - matplotlib-base
   - gsl          # fastENLOC build dependency (Stage 2)

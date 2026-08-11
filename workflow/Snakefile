@@ -436,6 +436,223 @@ rule stage2_phase1:
         touch(f"{RES}/stage2/phase1_coloc.done")
 
 
+# ------------------------- Stage 2 phase 2: LD panel, SuSiE, coloc-SuSiE
+rule download_1kg_panel_info:
+    output:
+        f"{DATA}/raw/ld/integrated_call_samples_v3.20130502.ALL.panel"
+    params:
+        url=config["ld_panel"]["panel_url"]
+    resources:
+        net=1
+    shell:
+        "curl -sSL --retry 3 -o {output} '{params.url}'"
+
+
+rule eur_sample_ids:
+    input:
+        f"{DATA}/raw/ld/integrated_call_samples_v3.20130502.ALL.panel"
+    output:
+        f"{DATA}/derived/ld/eur_ids.txt"
+    params:
+        n=config["ld_panel"]["expected_n_eur"]
+    shell:
+        r"""
+        awk '$3=="EUR"{{print $1}}' {input} > {output}
+        n=$(wc -l < {output})
+        if [ "$n" -ne {params.n} ]; then
+            echo "FATAL: $n EUR samples, expected {params.n}" >&2; exit 1
+        fi
+        """
+
+
+rule download_1kg_chr:
+    output:
+        temp(f"{DATA}/raw/ld/1kg_chr{{chrom}}.vcf.gz")
+    params:
+        url=lambda wc: config["ld_panel"]["vcf_url_pattern"].format(chrom=wc.chrom)
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -C - -o {output} '{params.url}'
+        gzip -t {output}
+        """
+
+
+rule ld_panel_chr:
+    input:
+        vcf=f"{DATA}/raw/ld/1kg_chr{{chrom}}.vcf.gz",
+        eur=f"{DATA}/derived/ld/eur_ids.txt",
+    output:
+        multiext(f"{DATA}/derived/ld/panel_chr{{chrom}}", ".bed", ".bim", ".fam")
+    params:
+        maf=config["ld_panel"]["min_maf"],
+        prefix=f"{DATA}/derived/ld/panel_chr{{chrom}}",
+    threads: 2
+    shell:
+        "bash scripts/build_ld_panel_chr.sh {input.vcf} {input.eur} "
+        "{params.maf} {params.prefix} {resources.tmpdir}/ld_panel"
+
+
+rule susie_gwas:
+    input:
+        region=f"{DATA}/regions/gwas/{{locus}}.tsv",
+        bed=lambda wc: (f"{DATA}/derived/ld/"
+                        f"panel_chr{locus_field(wc.locus, 'chrom')}.bed"),
+    output:
+        cs=f"{RES}/susie/{{locus}}.cs.tsv",
+        lbf=f"{RES}/susie/{{locus}}.lbf.tsv.gz",
+        summary=f"{RES}/susie/{{locus}}.summary.json",
+    params:
+        bfile=lambda wc: (f"{DATA}/derived/ld/"
+                          f"panel_chr{locus_field(wc.locus, 'chrom')}"),
+        L=config["susie"]["L"],
+        coverage=config["susie"]["coverage"],
+        prefix=f"{RES}/susie/{{locus}}",
+    resources:
+        mem_mb=4000
+    threads: 2
+    shell:
+        "Rscript scripts/run_susie_rss.R --gwas-region {input.region} "
+        "--bfile {params.bfile} --locus-id {wildcards.locus} "
+        "--L {params.L} --coverage {params.coverage} "
+        "--out-prefix {params.prefix} --tmpdir {resources.tmpdir}/susie"
+
+
+rule download_lbf:
+    output:
+        f"{DATA}/raw/eqtl_lbf/{{dataset}}.lbf_variable.txt.gz"
+    wildcard_constraints:
+        dataset=r"QTD[0-9]+"
+    params:
+        url=lambda wc: DATASETS[wc.dataset]["lbf_url"]
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -C - -o {output} '{params.url}'
+        gzip -t {output}
+        """
+
+
+rule extract_lbf:
+    input:
+        lbf=f"{DATA}/raw/eqtl_lbf/{{dataset}}.lbf_variable.txt.gz",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+    output:
+        flag=touch(f"{DATA}/regions_lbf/{{dataset}}.done")
+    wildcard_constraints:
+        dataset=r"QTD[0-9]+"
+    params:
+        outdir=f"{DATA}/regions_lbf/{{dataset}}"
+    shell:
+        "python scripts/extract_lbf.py --lbf {input.lbf} --loci {input.loci} "
+        "--outdir {params.outdir}"
+
+
+rule coloc_susie:
+    input:
+        lbf=f"{RES}/susie/{{locus}}.lbf.tsv.gz",
+        cs=f"{RES}/susie/{{locus}}.cs.tsv",
+        flag=f"{DATA}/regions_lbf/{{dataset}}.done",
+    output:
+        f"{RES}/coloc_susie/{{dataset}}/{{locus}}.tsv"
+    wildcard_constraints:
+        dataset=r"QTD[0-9]+"
+    params:
+        eqtl=f"{DATA}/regions_lbf/{{dataset}}/{{locus}}.tsv.gz",
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc_susie.R --gwas-lbf {input.lbf} "
+        "--gwas-cs {input.cs} --eqtl-lbf {params.eqtl} "
+        "--dataset-id {wildcards.dataset} --locus-id {wildcards.locus} "
+        "--p1 {params.p1} --p2 {params.p2} --p12 {params.p12} "
+        "--min-overlap {params.min_overlap} --out {output}"
+
+
+def stage2_phase2_files(wildcards):
+    loci = analysed_loci()
+    files = [f"{RES}/susie/{l}.summary.json" for l in loci]
+    for ds in config["coloc_susie"]["datasets"]:
+        files += [f"{RES}/coloc_susie/{ds}/{l}.tsv" for l in loci]
+    return files
+
+
+rule stage2_phase2:
+    input:
+        stage2_phase2_files
+    output:
+        touch(f"{RES}/stage2/phase2_susie.done")
+
+
+# --------------------------------------- Stage 2d: chromHMM CS annotation
+rule download_chromhmm:
+    output:
+        f"{DATA}/raw/chromhmm/{{eid}}_15_coreMarks_hg38lift_mnemonics.bed.gz"
+    wildcard_constraints:
+        eid=r"E[0-9]+"
+    params:
+        url=lambda wc: config["annotations"]["chromhmm_url_pattern"].format(eid=wc.eid)
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} '{params.url}'
+        gzip -t {output}
+        """
+
+
+rule annotate_cs_chromhmm:
+    input:
+        flag=f"{RES}/stage2/phase2_susie.done",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+        fetal=expand(f"{DATA}/raw/chromhmm/{{eid}}_15_coreMarks_hg38lift_mnemonics.bed.gz",
+                     eid=config["annotations"]["fetal_eids"]),
+        adult=expand(f"{DATA}/raw/chromhmm/{{eid}}_15_coreMarks_hg38lift_mnemonics.bed.gz",
+                     eid=config["annotations"]["adult_eids"]),
+    output:
+        f"{RES}/stage2/cs_chromhmm_annotation.tsv"
+    params:
+        states=",".join(config["annotations"]["regulatory_states"]),
+        susie_dir=f"{RES}/susie",
+    shell:
+        "python scripts/annotate_cs_chromhmm.py --susie-dir {params.susie_dir} "
+        "--loci {input.loci} --fetal-beds {input.fetal} "
+        "--adult-beds {input.adult} --states {params.states} --out {output}"
+
+
+rule aggregate_stage2:
+    input:
+        phase1=f"{RES}/stage2/phase1_coloc.done",
+        phase2=f"{RES}/stage2/phase2_susie.done",
+        chromhmm=f"{RES}/stage2/cs_chromhmm_annotation.tsv",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+        datasets=config["datasets_tsv"],
+        per_locus=f"{RES}/stage1/per_locus_table.tsv",
+    output:
+        explanations=f"{RES}/stage2/explanations.tsv",
+        summary=f"{RES}/stage2/stage2_summary.json",
+    params:
+        thr=config["coloc"]["pp4_threshold"],
+        cs_datasets=",".join(config["coloc_susie"]["datasets"]),
+        coloc_dir=f"{RES}/coloc",
+        coloc_susie_dir=f"{RES}/coloc_susie",
+        susie_dir=f"{RES}/susie",
+    shell:
+        "python scripts/aggregate_stage2.py --loci {input.loci} "
+        "--datasets {input.datasets} --per-locus-stage1 {input.per_locus} "
+        "--coloc-dir {params.coloc_dir} "
+        "--coloc-susie-dir {params.coloc_susie_dir} "
+        "--susie-dir {params.susie_dir} --chromhmm {input.chromhmm} "
+        "--coloc-susie-datasets {params.cs_datasets} "
+        "--pp4-threshold {params.thr} "
+        "--out-explanations {output.explanations} "
+        "--out-summary {output.summary}"
+
+
 # -------------------------------------------------------------- aggregation
 def stage1_coloc_files(wildcards):
     files = []
