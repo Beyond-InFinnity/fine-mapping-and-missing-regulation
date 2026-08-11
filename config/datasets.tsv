@@ -19,3 +19,11 @@ QTD000075	CommonMind_brain_DLPFC	CommonMind	brain (DLPFC)	586	eqtl_catalogue	htt
 QTD000434	ROSMAP_brain_DLPFC	ROSMAP	brain (DLPFC)	560	eqtl_catalogue	https://ftp.ebi.ac.uk/pub/databases/spot/eQTL/sumstats/QTS000025/QTD000434/QTD000434.all.tsv.gz	https://ftp.ebi.ac.uk/pub/databases/spot/eQTL/susie/QTS000025/QTD000434/QTD000434.credible_sets.tsv.gz	https://ftp.ebi.ac.uk/pub/databases/spot/eQTL/susie/QTS000025/QTD000434/QTD000434.lbf_variable.txt.gz	2
 QTD000579	Walker_2019_neocortex	Walker_2019	neocortex	211	eqtl_catalogue	https://ftp.ebi.ac.uk/pub/databases/spot/eQTL/sumstats/QTS000034/QTD000579/QTD000579.all.tsv.gz	https://ftp.ebi.ac.uk/pub/databases/spot/eQTL/susie/QTS000034/QTD000579/QTD000579.credible_sets.tsv.gz	https://ftp.ebi.ac.uk/pub/databases/spot/eQTL/susie/QTS000034/QTD000579/QTD000579.lbf_variable.txt.gz	2
 MetaBrain_Cortex_EUR	MetaBrain_cortex_EUR	MetaBrain	cortex	NA_per_snp	metabrain	https://download.metabrain.nl/2020-05-26-release/2020-05-26-CisEQTLSummaryStats/2020-05-26-Cortex-EUR			1
+Bryois_Astrocytes	Bryois_Astrocytes	Bryois_2022	Astrocytes	192	bryois	https://zenodo.org/records/7276971/files/Astrocytes			2
+Bryois_Endothelial_cells	Bryois_Endothelial_cells	Bryois_2022	Endothelial cells	192	bryois	https://zenodo.org/records/7276971/files/Endothelial.cells			2
+Bryois_Excitatory_neurons	Bryois_Excitatory_neurons	Bryois_2022	Excitatory neurons	192	bryois	https://zenodo.org/records/7276971/files/Excitatory.neurons			2
+Bryois_Inhibitory_neurons	Bryois_Inhibitory_neurons	Bryois_2022	Inhibitory neurons	192	bryois	https://zenodo.org/records/7276971/files/Inhibitory.neurons			2
+Bryois_Microglia	Bryois_Microglia	Bryois_2022	Microglia	192	bryois	https://zenodo.org/records/7276971/files/Microglia			2
+Bryois_OPCs_COPs	Bryois_OPCs_COPs	Bryois_2022	OPCs   COPs	192	bryois	https://zenodo.org/records/7276971/files/OPCs...COPs			2
+Bryois_Oligodendrocytes	Bryois_Oligodendrocytes	Bryois_2022	Oligodendrocytes	192	bryois	https://zenodo.org/records/7276971/files/Oligodendrocytes			2
+Bryois_Pericytes	Bryois_Pericytes	Bryois_2022	Pericytes	192	bryois	https://zenodo.org/records/7276971/files/Pericytes			2

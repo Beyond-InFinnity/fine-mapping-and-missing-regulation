@@ -35,7 +35,7 @@ opts <- parse_args(OptionParser(option_list = list(
   make_option("--min-overlap", type = "integer", dest = "min_overlap"),
   make_option("--out", type = "character")
 )))
-stopifnot(opts$source_type %in% c("eqtl_catalogue", "metabrain"))
+stopifnot(opts$source_type %in% c("eqtl_catalogue", "metabrain", "bryois"))
 
 EQTLCAT_COLS <- c("molecular_trait_id", "chromosome", "position", "ref", "alt",
                   "variant", "ma_samples", "maf", "pvalue", "beta", "se",
@@ -67,7 +67,13 @@ stopifnot(identical(names(gwas), c("CHR", "POS", "ID", "A1", "A2", "FCAS",
                                    "FCON", "INFO", "BETA", "SE", "PVAL",
                                    "NCAS", "NCON", "NEFF2")))
 stopifnot(nrow(gwas) > 0)
-gwas[, key := variant_key(CHR, POS, A1, A2)]
+if (opts$source_type == "bryois") {
+  # Bryois pair files identify variants by rsID only, so the join key is
+  # the rsID (positions/alleles/MAF are attached from snp_pos upstream)
+  gwas[, key := ID]
+} else {
+  gwas[, key := variant_key(CHR, POS, A1, A2)]
+}
 n_gwas_dup <- sum(duplicated(gwas$key))
 gwas <- gwas[!key %in% gwas$key[duplicated(gwas$key)]]
 gwas[, maf_gwas := pmin(FCON, 1 - FCON)]
@@ -97,6 +103,20 @@ if (opts$source_type == "eqtl_catalogue") {
     eq[, gene := molecular_trait_id]
     eq[, gene_symbol := NA_character_]
     eq[, n_snp := eqtl_n]
+  }
+} else if (opts$source_type == "bryois") {
+  eq <- fread(opts$eqtl_region, header = TRUE, sep = "\t")
+  stopifnot(identical(names(eq), c("gene_id", "gene_symbol", "rsid", "dist",
+                                   "pvalue", "beta", "pos", "ea", "oa", "maf")))
+  eqtl_n <- as.integer(opts$sample_size)
+  stopifnot(is.finite(eqtl_n), eqtl_n > 0)
+  if (nrow(eq) > 0) {
+    eq <- eq[is.finite(pvalue) & pvalue > 0 & pvalue <= 1 &
+             is.finite(maf) & maf > 0 & maf < 1]
+    eq[, key := rsid]
+    eq[, gene := gene_id]
+    eq[, n_snp := eqtl_n]
+    eq[, position := pos]
   }
 } else {  # metabrain
   eq <- fread(opts$eqtl_region, header = TRUE, sep = "\t")
@@ -157,6 +177,13 @@ for (g in unique(eq$gene)) {
     d_eqtl <- list(
       beta = m$beta, varbeta = m$se^2, MAF = m$maf, N = m$n_snp[1],
       snp = m$key, position = m$POS, type = "quant"
+    )
+    min_p_eqtl <- min(m$pvalue)
+  } else if (opts$source_type == "bryois") {
+    # no SE in the pair files: p-value route with native MAF and donor N
+    d_eqtl <- list(
+      pvalues = m$pvalue, MAF = m$maf, N = m$n_snp[1],
+      snp = m$key, position = m$position, type = "quant"
     )
     min_p_eqtl <- min(m$pvalue)
   } else {

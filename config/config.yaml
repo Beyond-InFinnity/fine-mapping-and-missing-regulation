@@ -79,6 +79,26 @@ metabrain:
   # frequencies (EUR-dominated) of the matched variant. Documented
   # approximation.
 
+# ---------------------------------------------------------------------------
+# Stage 2: LD reference and fine-mapping
+# ---------------------------------------------------------------------------
+ld_panel:
+  # 1000G 30x GRCh38 phased panel (NYGC), EUR unrelated subset (n=503)
+  vcf_url_pattern: "https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV/1kGP_high_coverage_Illumina.chr{chrom}.filtered.SNV_INDEL_SV_phased_panel.vcf.gz"
+  panel_url: "https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
+  expected_n_eur: 503
+  min_maf: 0.005          # panel-side MAF floor; biallelic SNPs only
+
+susie:
+  L: 10                   # max causal signals per locus
+  coverage: 0.95          # credible-set coverage
+  # GWAS n for susie_rss = median per-SNP effective N (2*NEFFDIV2)
+
+coloc_susie:
+  # datasets with precomputed eQTL-side SuSiE lbf to pair with GWAS SuSiE
+  datasets: ["QTD000171", "QTD000176", "QTD000051", "QTD000075",
+             "QTD000434", "QTD000579"]
+
 network:
   max_concurrent_downloads: 8
   retries: 3

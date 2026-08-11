@@ -349,6 +349,93 @@ rule coloc_metabrain:
         "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
 
 
+# ----------------------------------------------------- Bryois sc-eQTL ingest
+rule download_bryois_snp_pos:
+    output:
+        f"{DATA}/raw/bryois/snp_pos.txt.gz"
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} \
+            'https://zenodo.org/records/7276971/files/snp_pos.txt.gz?download=1'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule download_bryois_ct_chr:
+    output:
+        f"{DATA}/raw/bryois/{{dataset}}.{{chrom}}.gz"
+    wildcard_constraints:
+        dataset=r"Bryois_[A-Za-z_]+"
+    params:
+        url=lambda wc: f"{DATASETS[wc.dataset]['sumstats_url']}.{wc.chrom}.gz?download=1",
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} '{params.url}'
+        gzip -t {output}
+        """
+
+
+rule extract_bryois_chr:
+    input:
+        ct=f"{DATA}/raw/bryois/{{dataset}}.{{chrom}}.gz",
+        snp=f"{DATA}/raw/bryois/snp_pos.txt.gz",
+        intervals=f"{DATA}/derived/metabrain_intervals/chr{{chrom}}.tsv",
+    output:
+        flag=touch(f"{DATA}/regions/{{dataset}}/chr{{chrom}}.done")
+    wildcard_constraints:
+        dataset=r"Bryois_[A-Za-z_]+"
+    params:
+        outdir=f"{DATA}/regions/{{dataset}}/chr{{chrom}}"
+    shell:
+        "python scripts/extract_bryois.py --ct-file {input.ct} "
+        "--snp-pos {input.snp} --chrom {wildcards.chrom} "
+        "--intervals {input.intervals} --outdir {params.outdir}"
+
+
+rule coloc_bryois:
+    input:
+        gwas=f"{DATA}/regions/gwas/{{locus}}.tsv",
+        flag=lambda wc: (f"{DATA}/regions/{wc.dataset}/"
+                         f"chr{locus_field(wc.locus, 'chrom')}.done"),
+    output:
+        f"{RES}/coloc/{{dataset}}/{{locus}}.tsv"
+    wildcard_constraints:
+        dataset=r"Bryois_[A-Za-z_]+"
+    params:
+        eqtl=lambda wc: (f"{DATA}/regions/{wc.dataset}/"
+                         f"chr{locus_field(wc.locus, 'chrom')}/{wc.locus}.tsv"),
+        n=lambda wc: DATASETS[wc.dataset]["sample_size"],
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc.R --gwas-region {input.gwas} "
+        "--eqtl-region {params.eqtl} --source-type bryois "
+        "--dataset-id {wildcards.dataset} --sample-size {params.n} "
+        "--locus-id {wildcards.locus} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
+
+
+# ------------------------------------------------- Stage 2 phase 1 targets
+def stage2_coloc_files(wildcards):
+    ds2 = [d for d, r in DATASETS.items() if r["stage"] == "2"]
+    return [f"{RES}/coloc/{d}/{l}.tsv"
+            for d in ds2 for l in analysed_loci()]
+
+
+rule stage2_phase1:
+    input:
+        stage2_coloc_files
+    output:
+        touch(f"{RES}/stage2/phase1_coloc.done")
+
+
 # -------------------------------------------------------------- aggregation
 def stage1_coloc_files(wildcards):
     files = []
