@@ -103,8 +103,11 @@ if (opts$source_type == "eqtl_catalogue") {
   # header presence is asserted by the extraction rule; re-assert key columns
   stopifnot(all(c("PValue", "SNPChr", "SNPChrPos", "ProbeName", "RefAllele",
                   "AltAllele", "OverallZScore", "DatasetsNrSamples",
-                  "HGNCName") %in% names(eq)))
+                  "HGNCName", "Meta-Beta", "Meta-SE") %in% names(eq)))
   if (nrow(eq) > 0) {
+    eq[, beta := as.numeric(`Meta-Beta`)]
+    eq[, se := as.numeric(`Meta-SE`)]
+    eq <- eq[is.finite(beta) & is.finite(se) & se > 0]
     eq[, n_snp := vapply(strsplit(DatasetsNrSamples, ";", fixed = TRUE),
                          function(x) sum(as.numeric(x[x != "-"])), 0.0)]
     stopifnot(all(eq$n_snp > 0))
@@ -150,13 +153,15 @@ for (g in unique(eq$gene)) {
     )
     min_p_eqtl <- min(m$pvalue)
   } else {
+    # Meta-Beta/Meta-SE are native to the file; MAF for sdY estimation
+    # comes from the matched GWAS variant (see config note)
+    d_eqtl <- list(
+      beta = m$beta, varbeta = m$se^2, MAF = m$maf_gwas, N = m$n_snp,
+      snp = m$key, position = m$POS, type = "quant"
+    )
     p <- m$pvalue
     n_p_floor <- sum(p == 0)  # Z-derived p can underflow to 0 in the file
     p[p == 0] <- 1e-300
-    d_eqtl <- list(
-      pvalues = p, MAF = m$maf_gwas, N = m$n_snp,
-      snp = m$key, position = m$POS, type = "quant"
-    )
     min_p_eqtl <- min(p)
   }
 

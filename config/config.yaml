@@ -70,11 +70,14 @@ metabrain:
                      "AltAllele", "AlleleAssessed", "OverallZScore",
                      "DatasetsWhereSNPProbePairIsAvailableAndPassesQC",
                      "DatasetsZScores", "DatasetsNrSamples", "HGNCName",
-                     "IncludedDatasetsCorrelationCoeff"]
+                     "IncludedDatasetsCorrelationCoefficient", "Meta-Beta",
+                     "Meta-SE", "IncludedDatasetsBeta(SE)", "FDR"]
   build: "GRCh38"
-  # MetaBrain public release has no allele frequencies; coloc uses
-  # p-value + per-SNP N from MetaBrain plus MAF taken from PGC3 control
-  # frequencies (EUR-dominated) for the same variant. Documented approximation.
+  # coloc uses Meta-Beta/Meta-SE (which MetaBrain derives from meta Z + AF)
+  # plus per-SNP N from the file. The public release omits allele
+  # frequencies, so MAF for sdY estimation is taken from PGC3 control
+  # frequencies (EUR-dominated) of the matched variant. Documented
+  # approximation.
 
 network:
   max_concurrent_downloads: 8

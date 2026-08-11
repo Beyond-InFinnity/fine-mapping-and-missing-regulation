@@ -1,0 +1,7 @@
+# Smoke-test overlay: 3 loci on chr21/22 (small MetaBrain downloads;
+# 22-rs6010045 sits near the chr22 q-telomere as a window-clipping edge case).
+# Usage: snakemake -s workflow/Snakefile --configfile config/config.smoke.yaml ...
+locus_filter:
+  - "21-rs229362"
+  - "22-rs9607782"
+  - "22-rs6010045"

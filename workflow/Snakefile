@@ -212,7 +212,15 @@ rule gwas_region:
             locus_field(wc.locus, "region_start_hg38"),
             locus_field(wc.locus, "region_end_hg38")),
     shell:
-        "tabix -h {input.gwas} {params.region} > {output}"
+        # tabix -h only re-emits '#'-prefixed headers, not lines skipped via
+        # -S at index time, so the column header is prepended explicitly
+        # (pipefail off: head's early exit sends zcat a benign SIGPIPE)
+        r"""
+        set +o pipefail
+        zcat {input.gwas} | head -1 > {output}
+        set -o pipefail
+        tabix {input.gwas} {params.region} >> {output}
+        """
 
 
 rule fetch_eqtlcat_region:
@@ -282,7 +290,9 @@ rule extract_metabrain_chr:
     shell:
         r"""
         mkdir -p {params.outdir}
+        set +o pipefail
         obs_header=$(zcat {input.gz} | head -1)
+        set -o pipefail
         if [ "$obs_header" != "$(printf '%s' '{params.expected_header}')" ]; then
             echo "FATAL: MetaBrain header mismatch on chr{wildcards.chrom}" >&2
             echo "observed: $obs_header" >&2

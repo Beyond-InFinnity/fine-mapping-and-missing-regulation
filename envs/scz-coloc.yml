@@ -12,6 +12,7 @@ dependencies:
   - r-susier=0.14.2
   - r-coloc=5.2.3
   - r-data.table
+  - r-r.utils        # fread gz support
   - r-optparse
   - snakemake-minimal=9.25.1
   - htslib=1.24
