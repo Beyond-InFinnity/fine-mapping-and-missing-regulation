@@ -1,0 +1,95 @@
+{
+  "n_loci_total": 287,
+  "n_loci_analysed": 281,
+  "n_loci_excluded_mhc": 1,
+  "n_loci_skipped_chrX": 5,
+  "pp4_threshold": 0.8,
+  "datasets": {
+    "QTD000146": {
+      "label": "GTEx_brain_amygdala",
+      "sample_size": "129"
+    },
+    "QTD000151": {
+      "label": "GTEx_brain_anterior_cingulate_cortex",
+      "sample_size": "147"
+    },
+    "QTD000156": {
+      "label": "GTEx_brain_caudate",
+      "sample_size": "194"
+    },
+    "QTD000161": {
+      "label": "GTEx_brain_cerebellar_hemisphere",
+      "sample_size": "175"
+    },
+    "QTD000166": {
+      "label": "GTEx_brain_cerebellum",
+      "sample_size": "209"
+    },
+    "QTD000171": {
+      "label": "GTEx_brain_cortex",
+      "sample_size": "205"
+    },
+    "QTD000176": {
+      "label": "GTEx_brain_DLPFC",
+      "sample_size": "175"
+    },
+    "QTD000181": {
+      "label": "GTEx_brain_hippocampus",
+      "sample_size": "165"
+    },
+    "QTD000186": {
+      "label": "GTEx_brain_hypothalamus",
+      "sample_size": "170"
+    },
+    "QTD000191": {
+      "label": "GTEx_brain_nucleus_accumbens",
+      "sample_size": "202"
+    },
+    "QTD000196": {
+      "label": "GTEx_brain_putamen",
+      "sample_size": "170"
+    },
+    "QTD000201": {
+      "label": "GTEx_brain_spinal_cord",
+      "sample_size": "126"
+    },
+    "QTD000206": {
+      "label": "GTEx_brain_substantia_nigra",
+      "sample_size": "114"
+    },
+    "MetaBrain_Cortex_EUR": {
+      "label": "MetaBrain_cortex_EUR",
+      "sample_size": "NA_per_snp"
+    }
+  },
+  "fractions": {
+    "gtex_cortex": {
+      "n_colocalized": 27,
+      "n_analysed": 281,
+      "fraction": 0.09608540925266904,
+      "wilson95_lo": 0.06687728697083117,
+      "wilson95_hi": 0.1361881625197947
+    },
+    "metabrain": {
+      "n_colocalized": 55,
+      "n_analysed": 281,
+      "fraction": 0.19572953736654805,
+      "wilson95_lo": 0.15357455407756593,
+      "wilson95_hi": 0.2460914893713197
+    },
+    "any_gtex_brain": {
+      "n_colocalized": 67,
+      "n_analysed": 281,
+      "fraction": 0.23843416370106763,
+      "wilson95_lo": 0.19234991074919422,
+      "wilson95_hi": 0.2915735301103742
+    },
+    "any_brain": {
+      "n_colocalized": 90,
+      "n_analysed": 281,
+      "fraction": 0.3202846975088968,
+      "wilson95_lo": 0.2684693344233205,
+      "wilson95_hi": 0.37694745147338976
+    }
+  }
+}
