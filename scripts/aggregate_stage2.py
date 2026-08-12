@@ -85,11 +85,14 @@ def main() -> None:
     per1 = per1[per1["analysed"]].set_index("locus_id")
 
     # ---------------------------------------------------- load all inputs
-    g2 = read_coloc_dir(args.coloc_dir, stage2_ids, analysed)
+    cs_ds = args.coloc_susie_datasets.split(",")
+    # abf results are needed for stage-2 datasets AND any stage-1 dataset
+    # referenced by the ladder or the coloc-SuSiE comparison (their files
+    # exist from the Stage 1 run)
+    abf_ids = sorted(set(stage2_ids) | set(cs_ds) | {ds for ds, _ in LADDER})
+    g2 = read_coloc_dir(args.coloc_dir, abf_ids, analysed)
     b2 = best_pp4(g2)
     wide2 = b2.pivot(index="locus_id", columns="dataset_id", values="pp_h4")
-
-    cs_ds = args.coloc_susie_datasets.split(",")
     gs = read_coloc_dir(args.coloc_susie_dir, cs_ds, analysed)
     bs = best_pp4(gs)
     wide_s = bs.pivot(index="locus_id", columns="dataset_id", values="pp_h4")
