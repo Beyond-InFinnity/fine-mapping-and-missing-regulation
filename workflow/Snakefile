@@ -731,7 +731,8 @@ rule download_smr:
         mkdir -p {DATA}/tools
         cp {resources.tmpdir}/smr_extract/smr-*/smr {output}
         chmod +x {output}
-        {output} --version 2>&1 | head -2
+        # smr exits nonzero on --version; only require that it executes
+        ({output} --version 2>&1 || true) | grep -q "SMR"
         """
 
 
