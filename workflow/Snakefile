@@ -436,6 +436,20 @@ rule stage2_phase1:
         touch(f"{RES}/stage2/phase1_coloc.done")
 
 
+# ------------------------------------------- splicing (sQTL) channel targets
+def sqtl_coloc_files(wildcards):
+    ds = [d for d, r in DATASETS.items() if r["stage"] == "sqtl"]
+    return [f"{RES}/coloc/{d}/{l}.tsv"
+            for d in ds for l in analysed_loci()]
+
+
+rule sqtl_coloc:
+    input:
+        sqtl_coloc_files
+    output:
+        touch(f"{RES}/sqtl/coloc.done")
+
+
 # ------------------------- Stage 2 phase 2: LD panel, SuSiE, coloc-SuSiE
 rule download_1kg_panel_info:
     output:
