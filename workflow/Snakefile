@@ -825,6 +825,38 @@ rule stage4_meqtl:
         touch(f"{RES}/stage4/meqtl_coloc.done")
 
 
+rule download_hannon_fetal_mqtl:
+    output:
+        f"{DATA}/raw/meqtl/hannon_fetal_bonf_mqtls.csv.gz"
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -A 'Mozilla/5.0' -o {output} \
+            'https://epigenetics.essex.ac.uk/mQTL/All_Imputed_BonfSignificant_mQTLs.csv.gz'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule fetal_mqtl_overlap:
+    input:
+        hannon=f"{DATA}/raw/meqtl/hannon_fetal_bonf_mqtls.csv.gz",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+        gwas19=f"{DATA}/derived/gwas/pgc3.hg19.tsv.gz",
+        flag=f"{RES}/stage2/phase2_susie.done",
+    output:
+        f"{RES}/stage4/fetal_mqtl_overlap.tsv"
+    params:
+        window=config["coloc"]["window_bp"],
+        susie_dir=f"{RES}/susie",
+    shell:
+        "python scripts/fetal_mqtl_overlap.py --hannon {input.hannon} "
+        "--loci {input.loci} --susie-dir {params.susie_dir} "
+        "--gwas-hg19 {input.gwas19} --window-bp {params.window} "
+        "--out {output}"
+
+
 # --------------------------------------- Stage 2d: chromHMM CS annotation
 rule download_chromhmm:
     output:
