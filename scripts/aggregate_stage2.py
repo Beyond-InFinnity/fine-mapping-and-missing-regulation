@@ -123,8 +123,11 @@ def main() -> None:
 
     ex["best_pp4_bryois"] = ex[[c for c in bryois_ids if c in ex]].max(axis=1)
     ex["best_bryois_ct"] = ex[[c for c in bryois_ids if c in ex]].idxmax(axis=1)
-    ex["best_pp4_susie"] = ex[[c for c in ex.columns
-                               if str(c).startswith("susie_")]].max(axis=1)
+    # exact column names only — a startswith() selector would also catch
+    # the boolean susie_converged column and poison the max
+    susie_pp4_cols = [f"susie_{d}" for d in cs_ds if f"susie_{d}" in ex.columns]
+    assert susie_pp4_cols, "no coloc-SuSiE PP4 columns found"
+    ex["best_pp4_susie"] = ex[susie_pp4_cols].max(axis=1)
     ex["coloc_fetal"] = ex.get(FETAL_DS, pd.Series(index=ex.index)).ge(thr)
     ex["coloc_bryois_any"] = ex["best_pp4_bryois"].ge(thr)
     ex["rescued_by_susie"] = (~ex["coloc_any_brain_abf"].astype(bool)

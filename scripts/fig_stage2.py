@@ -80,7 +80,7 @@ def main() -> None:
 
     # ------------------------------------------------------------ Panel B
     style_axis(ax_b)
-    susie_cols = [c for c in ex.columns if str(c).startswith("susie_")]
+    susie_cols = [c for c in ex.columns if str(c).startswith("susie_QTD")]
     abf_counterparts = [c.replace("susie_", "") for c in susie_cols]
     abf_present = [c for c in abf_counterparts if c in ex.columns]
     x = ex[abf_present].max(axis=1).fillna(0)
