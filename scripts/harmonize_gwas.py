@@ -78,6 +78,13 @@ def main() -> None:
             f"raw header mismatch:\n{header}\nvs\n{expected_cols}"
         )
         idx = {c: i for i, c in enumerate(header)}
+        # PGC ships two layouts: primary carries NEFFDIV2 (half effective
+        # N), the EUR subset carries NEFF (total). Output contract is
+        # always NEFF2 = effective N / 2.
+        assert ("NEFFDIV2" in idx) != ("NEFF" in idx), (
+            "expected exactly one of NEFFDIV2/NEFF in header"
+        )
+        neff_col = "NEFFDIV2" if "NEFFDIV2" in idx else "NEFF"
 
         for line in f:
             n_in += 1
@@ -108,11 +115,13 @@ def main() -> None:
                 drops["freq_out_of_range"] += 1
                 continue
 
+            neff2 = (p[idx[neff_col]] if neff_col == "NEFFDIV2"
+                     else str(float(p[idx[neff_col]]) / 2))
             row = [p[idx["CHROM"]], str(pos), p[idx["ID"]], p[idx["A1"]],
                    p[idx["A2"]], p[idx["FCAS"]], p[idx["FCON"]],
                    p[idx["IMPINFO"]], p[idx["BETA"]], p[idx["SE"]],
                    p[idx["PVAL"]], p[idx["NCAS"]], p[idx["NCON"]],
-                   p[idx["NEFFDIV2"]]]
+                   neff2]
             out19.write("\t".join(row) + "\n")
             bed.write(f"chr{p[idx['CHROM']]}\t{pos - 1}\t{pos}\t{kept_rows}\n")
             kept_rows += 1

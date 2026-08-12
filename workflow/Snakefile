@@ -475,7 +475,7 @@ rule harmonize_gwas_eur:
         hg38_tbi=f"{DATA}/derived/gwas/pgc3eur.hg38.tsv.gz.tbi",
         meta=f"{DATA}/derived/gwas/pgc3eur.meta.json",
     params:
-        cols=",".join(config["gwas"]["expected_columns"]),
+        cols=",".join(config["gwas_eur"]["expected_columns"]),
         min_lift=config["gwas"]["min_lift_rate"],
         prefix=f"{DATA}/derived/gwas/pgc3eur",
     threads: 4

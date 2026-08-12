@@ -104,6 +104,10 @@ coloc_susie:
 gwas_eur:
   url: "https://ndownloader.figshare.com/files/34517828"
   figshare_file_id: 34517828
+  # the EUR subset ships a 14-column layout: no NGT/DIRE, and NEFF (total
+  # effective N) instead of NEFFDIV2
+  expected_columns: ["CHROM", "ID", "POS", "A1", "A2", "FCAS", "FCON",
+                     "IMPINFO", "BETA", "SE", "PVAL", "NCAS", "NCON", "NEFF"]
 
 # Stage 4: brain methylation QTLs (SMR besd format, hg19)
 meqtl:
