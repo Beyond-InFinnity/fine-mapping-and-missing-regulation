@@ -7,10 +7,14 @@ Everything runs on **public summary statistics** — no controlled data.
 
 ## Stages
 
-- **Stage 0 — Feasibility audit** ([docs/stage0_audit.md](docs/stage0_audit.md)) ✅ done, awaiting review
-- **Stage 1 — Replication baseline**: fraction of PGC3 loci with PP4 > 0.8 vs ≥1 brain eQTL (GTEx cortex vs MetaBrain)
-- **Stage 2 — Dissecting the miss**: allelic heterogeneity (coloc-SuSiE) · eQTL power · cell-type dilution · fetal-specific regulation
-- **Stage 3 — Writeup**: reproducible report ranking explanations by evidence
+- **Stage 0 — Feasibility audit** ([docs/stage0_audit.md](docs/stage0_audit.md)) ✅
+- **Stage 1 — Replication baseline** ([docs/stage1_report.md](docs/stage1_report.md)) ✅ — 32% of 281 loci colocalize with ≥1 of 14 brain eQTL datasets
+- **Stage 2 — Dissecting the miss** ([docs/stage2_report.md](docs/stage2_report.md)) ✅ — power/heterogeneity/cell-type/fetal ledger; 57% remain unexplained
+- **Stage 3 — Writeup** ([report/report.qmd](report/report.qmd) → `quarto render`) ✅ — self-contained HTML, every number computed from results files
+
+Caveat for reruns: Snakemake tracks rule shell strings, not the external
+scripts they call — after editing a `scripts/*.py|R` file, force downstream
+regeneration with `--forcerun <rule>`.
 
 ## Environments
 

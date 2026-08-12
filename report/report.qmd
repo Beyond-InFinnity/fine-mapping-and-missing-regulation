@@ -1,0 +1,249 @@
+---
+title: "Fine-mapping and the missing regulation"
+subtitle: "Why PGC3 schizophrenia loci fail to colocalize with brain eQTLs — a quantitative dissection"
+author: "Connor Finnerty (analysis pipeline: github-tracked, fully regenerable from public downloads)"
+date: 2026-08-11
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    embed-resources: true
+    fig-align: left
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+```{python}
+#| label: setup
+import json
+import pandas as pd
+import numpy as np
+
+RES = ".."  # rendered from report/, results live at repo root
+per1 = pd.read_csv(f"{RES}/results/stage1/per_locus_table.tsv", sep="\t")
+an = per1[per1["analysed"]].set_index("locus_id")
+s1 = json.load(open(f"{RES}/results/stage1/summary.json"))
+ex = pd.read_csv(f"{RES}/results/stage2/explanations.tsv", sep="\t").set_index("locus_id")
+s2 = json.load(open(f"{RES}/results/stage2/stage2_summary.json"))
+thr = s1["pp4_threshold"]
+miss = ~ex["coloc_any_brain_abf"].astype(bool)
+def pct(x): return f"{100*x:.0f}%"
+```
+
+## The question
+
+Genome-wide significant schizophrenia loci overwhelmingly sit in non-coding
+sequence, yet they colocalize with brain expression QTLs far less often than a
+purely regulatory model predicts — the **"missing regulation"** puzzle. This
+report reproduces that observation on fully public data and quantitatively
+tests four competing explanations. Every number and figure regenerates from
+raw downloads via the project Snakefile; parameters live in
+`config/config.yaml`.
+
+**Data**: PGC3 SCZ (Trubetskoy et al. 2022) primary autosome meta-analysis;
+287 loci (Supplementary Table 3, SHA256-pinned) → 281 analysable (1 MHC,
+5 chrX excluded). eQTLs: 13 GTEx v8 brain tissues + MetaBrain cortex-EUR
+(bulk), BrainSeq/ROSMAP/CommonMind DLPFC (power ladder), Walker 2019 fetal
+neocortex, Bryois 2022 sc-eQTLs (8 cell types). LD: 1000G GRCh38 EUR
+(n=503). All GRCh38, coloc 5.2.3 / susieR 0.14.2.
+
+## Stage 1 — the gap replicates
+
+```{python}
+#| label: stage1-table
+rows = []
+for k, lab in [("gtex_cortex", "GTEx cortex (N=205)"),
+               ("metabrain", "MetaBrain cortex-EUR (N≈2,700)"),
+               ("any_gtex_brain", "Any of 13 GTEx brain tissues"),
+               ("any_brain", "Any of 14 bulk brain datasets")]:
+    d = s1["fractions"][k]
+    rows.append({"Dataset class": lab,
+                 "Colocalized (PP4>0.8)": f'{d["n_colocalized"]}/{d["n_analysed"]}',
+                 "Fraction": pct(d["fraction"]),
+                 "Wilson 95% CI": f'{pct(d["wilson95_lo"])}–{pct(d["wilson95_hi"])}'})
+pd.DataFrame(rows)
+```
+
+![](../results/stage1/fig_stage1.png)
+
+Positive controls anchor the pipeline: FURIN at 15-rs4702 (PP4 = 0.99996,
+MetaBrain) and ZNF823 at its two chr19 loci top the colocalization list. Of
+the 191 non-colocalizing loci, **180 (94%) contain at least one gene with a
+brain eQTL at p < 1e-6** in the ±1 Mb window — regulation is present but tags
+different variants.
+
+## Stage 2 — four explanations, one ledger
+
+```{python}
+#| label: ledger
+resc = int(ex["rescued_by_susie"].sum())
+sc_only = int((ex["coloc_bryois_any"].fillna(False) & miss & ~ex["rescued_by_susie"]).sum())
+fet_only = int((ex["coloc_fetal"].fillna(False) & miss & ~ex["rescued_by_susie"]
+                & ~ex["coloc_bryois_any"].fillna(False)).sum())
+n90 = int((~miss).sum()); unexp = int(miss.sum()) - resc - sc_only - fet_only
+pd.DataFrame([
+    {"Step": "Stage 1 bulk colocalization", "Loci": n90, "Cumulative": n90},
+    {"Step": "(a) + multi-signal rescue (coloc-SuSiE)", "Loci": resc, "Cumulative": n90+resc},
+    {"Step": "(c) + single-cell-only colocalization", "Loci": sc_only, "Cumulative": n90+resc+sc_only},
+    {"Step": "(d) + fetal-only colocalization", "Loci": fet_only, "Cumulative": n90+resc+sc_only+fet_only},
+    {"Step": "UNEXPLAINED", "Loci": unexp, "Cumulative": 281},
+])
+```
+
+![](../results/stage2/fig_stage2.png)
+
+### (a) Allelic heterogeneity — reshapes more than it enlarges
+
+```{python}
+#| label: het
+h = s2["heterogeneity"]
+pd.DataFrame([{
+  "Loci with ≥2 GWAS credible sets": f'{sum(v for k,v in h["n_cs_distribution"].items() if int(k)>=2)}/281',
+  "Multi-CS among misses vs hits": f'{pct(h["frac_multi_cs_non_coloc"])} vs {pct(h["frac_multi_cs_coloc"])} (Fisher p={h["fisher_p"]:.2f})',
+  "Rescued (miss→hit)": h["n_rescued_by_coloc_susie"],
+  "Demoted (hit→signals separate)": f'{h["n_demoted_by_coloc_susie"]} of {h["n_abf_coloc_same6"]} abf hits',
+}]).T.rename(columns={0: "value"})
+```
+
+Multi-signal architecture is common everywhere (~40% of loci) but **not
+enriched among misses** — heterogeneity is not the primary explanation for
+the gap. Its real effect is **churn**: 27% of single-variant coloc hits
+dissolve when signals are fine-mapped and paired individually (e.g.
+22-rs9607782 × ENSG00000232710: abf PP4 = 0.97 → PP3 = 0.98, peaks ~30 kb
+apart), while a similar number of misses are rescued (e.g. 8-rs4129585:
+0.56 → 0.99). Single-causal-variant colocalization misclassifies roughly a
+quarter of calls *in both directions*.
+
+### (b) eQTL power — significant, saturating
+
+```{python}
+#| label: power
+p = s2["power"]
+t = pd.DataFrame(p["ladder"])
+t["frac_coloc"] = t["frac_coloc"].map(pct)
+t.columns = ["Dataset", "eQTL N", "Fraction colocalized", "n"]
+t
+```
+
+Logistic OR = **`{python} f'{s2["power"]["logit_or_per_10x_n"]:.1f}'` per 10×
+eQTL sample size** (p = `{python} f'{s2["power"]["logit_p"]:.1e}'`), but the
+curve flattens: extrapolated bulk-cortex ceiling ≈ 25%. Power explains part
+of the gap; it cannot close it.
+
+### (c) Cell-type dilution — small now, clearly under-sampled
+
+```{python}
+#| label: celltype
+c = s2["cell_type"]
+pd.DataFrame([{"Loci colocalizing in ≥1 of 8 cell types (N=192!)": c["n_coloc_any_celltype"],
+               "Missed by both bulk cortex datasets": c["n_sc_only_vs_bulk_cortex"],
+               "Missed by all 14 bulk datasets": sc_only}]).T.rename(columns={0:"value"})
+```
+
+Per donor, sc-eQTLs are strikingly productive (37 loci at N=192 vs 16 for
+bulk DLPFC at N=175); excitatory neurons dominate (23), then
+oligodendrocytes (12). Given the power curve in (b), this is the explanation
+most likely to grow.
+
+### (d) Fetal / context specificity — weakest direct support, instructive twist
+
+```{python}
+#| label: fetal
+f = s2["fetal"]
+pd.DataFrame([{
+ "Fetal-eQTL colocalizations (N=211)": f["n_fetal_coloc"],
+ "…among Stage-1 misses": f["n_fetal_coloc_among_non_coloc"],
+ "CS fetal-regulatory PIP, hits vs misses": f'{f["mean_fetal_reg_pip_coloc"]:.3f} vs {f["mean_fetal_reg_pip_non_coloc"]:.3f} (MWU p={f["mwu_p_fetal_reg_pip"]:.3f})',
+ "Fetal-not-adult enrichment": f'OR={f["fetal_only_reg_fisher_or"]:.2f}, p={f["fetal_only_reg_fisher_p"]:.2f}',
+}]).T.rename(columns={0:"value"})
+```
+
+Contrary to the fetal-enhancer hypothesis, non-colocalizing loci show *less*
+credible-set overlap with fetal regulatory chromatin than colocalizing loci —
+and the depletion is even stronger for adult chromatin (0.048 vs 0.136).
+The unexplained loci are not hiding in fetal enhancers; their credible sets
+sit in sequence **not annotated as regulatory in any surveyed brain
+context**.
+
+## Threshold sensitivity
+
+```{python}
+#| label: sensitivity
+rows = []
+for t_ in [0.5, 0.7, 0.8, 0.9]:
+    rows.append({
+      "PP4 threshold": t_,
+      "GTEx cortex": int((an["best_pp4_gtex_cortex"] >= t_).sum()),
+      "MetaBrain": int((an["best_pp4_metabrain"] >= t_).sum()),
+      "Any bulk brain": int((an["best_pp4_any_brain"] >= t_).sum()),
+      "coloc-SuSiE (6 ds)": int((ex["best_pp4_susie"] >= t_).sum()),
+      "Any Bryois cell type": int((ex["best_pp4_bryois"] >= t_).sum()),
+    })
+pd.DataFrame(rows)
+```
+
+The qualitative picture — a majority of loci without eQTL support — is
+threshold-robust.
+
+## Ranked verdict
+
+1. **eQTL power** — strongest statistical signal, bounded upside (~25% ceiling).
+2. **Single-variant-assumption error** (allelic heterogeneity) — corrects
+   ~26% of classifications in both directions; a methods lesson more than a
+   gap-closer.
+3. **Cell-type dilution** — small measured contribution, largest growth
+   potential.
+4. **Fetal-specific regulation** — minimal direct contribution; chromatin
+   evidence redirects the hypothesis toward contexts *not yet assayed*.
+
+**57% of SCZ loci (159/281) resist all four explanations.** Combined with
+the chromatin depletion result, the data favour regulation acting in
+unmeasured contexts (developmental windows, activity-dependent states, rare
+cell populations) or non-eQTL mechanisms (splicing, APA, protein-level)
+as the residual explanation — matching and extending the published
+missing-regulation argument.
+
+## Best candidates for context-specific regulation
+
+Top 20 unexplained-or-borderline loci ranked by `context_score`
+(sc/fetal coloc evidence + fetal-skewed credible-set chromatin):
+
+```{python}
+#| label: candidates
+cand = ex[miss].nlargest(20, "context_score")[[
+    "index_snp", "n_gwas_cs", "best_pp4_bryois", "best_bryois_ct",
+    "QTD000579", "fetal_reg_pip", "adult_reg_pip", "context_score"]].round(3)
+cand.columns = ["index SNP", "GWAS credible sets", "best sc PP4",
+                "best cell type", "fetal PP4", "CS fetal-reg PIP",
+                "CS adult-reg PIP", "score"]
+cand
+```
+
+## Limitations
+
+1. **Reference-panel LD** (1000G n=503 vs N≈161k GWAS) limits GWAS-side
+   SuSiE; 33 loci yield no credible set and 2 don't converge. PolyFun with
+   UKB LD is the designated sensitivity arm.
+2. **eQTL-side SuSiE coverage** is partial (six datasets with published lbf;
+   small-N tissues often lack credible sets), making rescues conservative
+   and demotions dataset-limited.
+3. **MetaBrain** public release lacks allele frequencies (GWAS-control MAF
+   used for prior scaling) and its betas are Z-derived; **Bryois** ships no
+   SEs (p-value route, fixed N=192).
+4. GWAS is EUR+EAS "primary" vs European eQTL panels; EUR-only GWAS
+   sensitivity is queued.
+5. Expression-level only: splicing/isoform QTLs (PsychENCODE isoQTL, GTEx
+   sQTL) not yet incorporated — a known additional explanation channel.
+6. `context_score` is a heuristic ranking for follow-up prioritization, not
+   a calibrated posterior.
+
+## Reproducibility
+
+`git clone` → `conda env create -f envs/scz-coloc.yml` → `snakemake -s
+workflow/Snakefile all results/stage2/explanations.tsv
+results/stage2/fig_stage2.png --cores N --resources net=8` → `quarto render
+report/report.qmd`. Raw-data provenance (URLs, sizes, SHA256s) recorded in
+sidecar files at download time; the supplementary-table zip is
+checksum-pinned in config.

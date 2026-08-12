@@ -28,8 +28,12 @@ dependencies:
   - matplotlib-base
   - gsl          # fastENLOC build dependency (Stage 2)
   - zlib
+  - quarto        # Stage 3 report rendering
   - pip
   - pip:
       - CrossMap==0.7.3
       - openpyxl
       - xlrd
+      - ipykernel   # quarto jupyter engine
+      - nbclient
+      - nbformat

@@ -667,6 +667,20 @@ rule fig_stage2:
         "--summary {input.summary} --out-prefix {params.prefix}"
 
 
+rule render_report:
+    input:
+        qmd="report/report.qmd",
+        s1=f"{RES}/stage1/summary.json",
+        s2=f"{RES}/stage2/stage2_summary.json",
+        explanations=f"{RES}/stage2/explanations.tsv",
+        fig1=f"{RES}/stage1/fig_stage1.png",
+        fig2=f"{RES}/stage2/fig_stage2.png",
+    output:
+        "report/report.html"
+    shell:
+        "quarto render {input.qmd}"
+
+
 # -------------------------------------------------------------- aggregation
 def stage1_coloc_files(wildcards):
     files = []
