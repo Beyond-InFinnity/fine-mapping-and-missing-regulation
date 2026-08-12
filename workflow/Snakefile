@@ -450,6 +450,120 @@ rule sqtl_coloc:
         touch(f"{RES}/sqtl/coloc.done")
 
 
+# ------------------------------------------ EUR-only GWAS sensitivity arm
+rule download_gwas_eur:
+    output:
+        f"{DATA}/raw/gwas/pgc3_scz_eur_autosome.tsv.gz"
+    params:
+        url=config["gwas_eur"]["url"]
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} '{params.url}'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule harmonize_gwas_eur:
+    input:
+        raw=f"{DATA}/raw/gwas/pgc3_scz_eur_autosome.tsv.gz",
+        chain=f"{DATA}/raw/liftover/hg19ToHg38.over.chain.gz",
+    output:
+        hg38=f"{DATA}/derived/gwas/pgc3eur.hg38.tsv.gz",
+        hg38_tbi=f"{DATA}/derived/gwas/pgc3eur.hg38.tsv.gz.tbi",
+        meta=f"{DATA}/derived/gwas/pgc3eur.meta.json",
+    params:
+        cols=",".join(config["gwas"]["expected_columns"]),
+        min_lift=config["gwas"]["min_lift_rate"],
+        prefix=f"{DATA}/derived/gwas/pgc3eur",
+    threads: 4
+    shell:
+        "python scripts/harmonize_gwas.py --raw-gz {input.raw} "
+        "--chain {input.chain} --expected-columns {params.cols} "
+        "--expected-n-variants -1 --min-lift-rate {params.min_lift} "
+        "--out-prefix {params.prefix} "
+        "--tmpdir {resources.tmpdir}/pgc3eur_harmonize"
+
+
+rule gwas_region_eur:
+    input:
+        gwas=f"{DATA}/derived/gwas/pgc3eur.hg38.tsv.gz",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+    output:
+        f"{DATA}/regions/gwas_eur/{{locus}}.tsv"
+    params:
+        region=lambda wc: "{}:{}-{}".format(
+            locus_field(wc.locus, "chrom"),
+            locus_field(wc.locus, "region_start_hg38"),
+            locus_field(wc.locus, "region_end_hg38")),
+    shell:
+        r"""
+        set +o pipefail
+        zcat {input.gwas} | head -1 > {output}
+        set -o pipefail
+        tabix {input.gwas} {params.region} >> {output}
+        """
+
+
+rule coloc_eqtlcat_eur:
+    input:
+        gwas=f"{DATA}/regions/gwas_eur/{{locus}}.tsv",
+        eqtl=f"{DATA}/regions/{{dataset}}/{{locus}}.tsv.gz",
+    output:
+        f"{RES}/coloc_eur/{{dataset}}/{{locus}}.tsv"
+    wildcard_constraints:
+        dataset=r"QTD[0-9]+"
+    params:
+        n=lambda wc: DATASETS[wc.dataset]["sample_size"],
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc.R --gwas-region {input.gwas} "
+        "--eqtl-region {input.eqtl} --source-type eqtl_catalogue "
+        "--dataset-id {wildcards.dataset} --sample-size {params.n} "
+        "--locus-id {wildcards.locus} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
+
+
+rule coloc_metabrain_eur:
+    input:
+        gwas=f"{DATA}/regions/gwas_eur/{{locus}}.tsv",
+        flag=lambda wc: (f"{DATA}/regions/metabrain/"
+                         f"chr{locus_field(wc.locus, 'chrom')}.done"),
+    output:
+        f"{RES}/coloc_eur/{METABRAIN_ID}/{{locus}}.tsv"
+    params:
+        eqtl=lambda wc: (f"{DATA}/regions/metabrain/"
+                         f"chr{locus_field(wc.locus, 'chrom')}/{wc.locus}.tsv.gz"),
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc.R --gwas-region {input.gwas} "
+        "--eqtl-region {params.eqtl} --source-type metabrain "
+        f"--dataset-id {METABRAIN_ID} --sample-size NA "
+        "--locus-id {wildcards.locus} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
+
+
+def eur_sensitivity_files(wildcards):
+    return [f"{RES}/coloc_eur/{d}/{l}.tsv"
+            for d in [GTEX_CORTEX_ID, METABRAIN_ID]
+            for l in analysed_loci()]
+
+
+rule eur_sensitivity:
+    input:
+        eur_sensitivity_files
+    output:
+        touch(f"{RES}/robustness/eur_coloc.done")
+
+
 # ------------------------- Stage 2 phase 2: LD panel, SuSiE, coloc-SuSiE
 rule download_1kg_panel_info:
     output:
@@ -600,6 +714,115 @@ rule stage2_phase2:
         stage2_phase2_files
     output:
         touch(f"{RES}/stage2/phase2_susie.done")
+
+
+# --------------------------------- Stage 4: brain meQTL (SMR besd) coloc
+rule download_smr:
+    output:
+        f"{DATA}/tools/smr"
+    params:
+        url=config["meqtl"]["smr_url"]
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {resources.tmpdir}/smr.zip '{params.url}'
+        unzip -o -q {resources.tmpdir}/smr.zip -d {resources.tmpdir}/smr_extract
+        mkdir -p {DATA}/tools
+        cp {resources.tmpdir}/smr_extract/smr-*/smr {output}
+        chmod +x {output}
+        {output} --version 2>&1 | head -2
+        """
+
+
+rule download_brain_mmeta:
+    output:
+        f"{DATA}/raw/meqtl/Brain-mMeta.tar.gz"
+    params:
+        url=config["meqtl"]["brain_mmeta_url"]
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -C - -o {output} '{params.url}'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule extract_brain_mmeta:
+    input:
+        f"{DATA}/raw/meqtl/Brain-mMeta.tar.gz"
+    output:
+        multiext(f"{DATA}/derived/meqtl/Brain-mMeta", ".besd", ".esi", ".epi")
+    params:
+        outdir=f"{DATA}/derived/meqtl"
+    shell:
+        r"""
+        mkdir -p {params.outdir} {resources.tmpdir}/mmeta
+        tar xzf {input} -C {resources.tmpdir}/mmeta
+        for ext in besd esi epi; do
+            src=$(find {resources.tmpdir}/mmeta -name "*.${{ext}}" | head -1)
+            if [ -z "$src" ]; then echo "FATAL: no .${{ext}} in archive" >&2; exit 1; fi
+            mv "$src" {params.outdir}/Brain-mMeta.${{ext}}
+        done
+        rm -rf {resources.tmpdir}/mmeta
+        """
+
+
+rule meqtl_region:
+    input:
+        smr=f"{DATA}/tools/smr",
+        besd=f"{DATA}/derived/meqtl/Brain-mMeta.besd",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+    output:
+        f"{DATA}/regions/meqtl_brain_mmeta/{{locus}}.tsv"
+    params:
+        prefix=f"{DATA}/derived/meqtl/Brain-mMeta",
+        # SMR region filters are hg19 and kb-denominated
+        chrom=lambda wc: locus_field(wc.locus, "chrom"),
+        from_kb=lambda wc: max(0, (int(locus_field(wc.locus, "index_pos_hg19"))
+                                   - config["coloc"]["window_bp"]) // 1000),
+        to_kb=lambda wc: (int(locus_field(wc.locus, "index_pos_hg19"))
+                          + config["coloc"]["window_bp"]) // 1000 + 1,
+    resources:
+        mem_mb=3000
+    shell:
+        "{input.smr} --beqtl-summary {params.prefix} --query 1 "
+        "--snp-chr {params.chrom} --from-snp-kb {params.from_kb} "
+        "--to-snp-kb {params.to_kb} --out {output}.tmp "
+        "&& mv {output}.tmp.txt {output}"
+
+
+rule coloc_meqtl:
+    input:
+        gwas=f"{DATA}/regions/gwas/{{locus}}.tsv",
+        eqtl=f"{DATA}/regions/meqtl_brain_mmeta/{{locus}}.tsv",
+    output:
+        f"{RES}/coloc/Brain_mMeta_meQTL/{{locus}}.tsv"
+    params:
+        n=config["meqtl"]["n_effective"],
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/run_coloc.R --gwas-region {input.gwas} "
+        "--eqtl-region {input.eqtl} --source-type smr_meqtl "
+        "--dataset-id Brain_mMeta_meQTL --sample-size {params.n} "
+        "--locus-id {wildcards.locus} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} --out {output}"
+
+
+def meqtl_coloc_files(wildcards):
+    return [f"{RES}/coloc/Brain_mMeta_meQTL/{l}.tsv" for l in analysed_loci()]
+
+
+rule stage4_meqtl:
+    input:
+        meqtl_coloc_files
+    output:
+        touch(f"{RES}/stage4/meqtl_coloc.done")
 
 
 # --------------------------------------- Stage 2d: chromHMM CS annotation

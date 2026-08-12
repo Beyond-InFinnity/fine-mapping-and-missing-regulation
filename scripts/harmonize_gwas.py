@@ -36,7 +36,9 @@ def main() -> None:
     ap.add_argument("--chain", required=True)
     ap.add_argument("--expected-columns", required=True,
                     help="comma-separated expected raw header")
-    ap.add_argument("--expected-n-variants", type=int, required=True)
+    ap.add_argument("--expected-n-variants", type=int, required=True,
+                    help="-1 = read the count from the file's ##nVariants "
+                         "header line instead of an external expectation")
     ap.add_argument("--min-lift-rate", type=float, required=True)
     ap.add_argument("--out-prefix", required=True)
     ap.add_argument("--tmpdir", required=True)
@@ -58,14 +60,20 @@ def main() -> None:
     hg19_body = os.path.join(args.tmpdir, "hg19_body.tsv")
     bed_in = os.path.join(args.tmpdir, "lift_in.bed")
 
+    expected_n = args.expected_n_variants
     with gzip.open(args.raw_gz, "rt") as f, \
             open(hg19_body, "w") as out19, open(bed_in, "w") as bed:
         header = None
         for line in f:
             if line.startswith("##"):
+                if line.startswith("##nVariants="):
+                    n_from_header = int(line.strip().split("=")[1])
+                    if expected_n == -1:
+                        expected_n = n_from_header
                 continue
             header = line.rstrip("\n").split("\t")
             break
+        assert expected_n > 0, "no expectation given and no ##nVariants header"
         assert header == expected_cols, (
             f"raw header mismatch:\n{header}\nvs\n{expected_cols}"
         )
@@ -110,8 +118,8 @@ def main() -> None:
             kept_rows += 1
 
     n_dropped = sum(drops.values())
-    assert n_in == args.expected_n_variants, (
-        f"input had {n_in} variants, expected {args.expected_n_variants}"
+    assert n_in == expected_n, (
+        f"input had {n_in} variants, expected {expected_n}"
     )
     assert n_dropped <= 0.001 * n_in, f"excessive QC drops: {drops}"
     print(f"parsed {n_in} variants, kept {kept_rows}, drops: {drops}", flush=True)

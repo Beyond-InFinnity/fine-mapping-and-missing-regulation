@@ -99,6 +99,18 @@ coloc_susie:
   datasets: ["QTD000171", "QTD000176", "QTD000051", "QTD000075",
              "QTD000434", "QTD000579"]
 
+# EUR-only GWAS sensitivity arm (ancestry-matched to the eQTL panels).
+# Expected variant count is read from the file's own ##nVariants header.
+gwas_eur:
+  url: "https://ndownloader.figshare.com/files/34517828"
+  figshare_file_id: 34517828
+
+# Stage 4: brain methylation QTLs (SMR besd format, hg19)
+meqtl:
+  brain_mmeta_url: "https://yanglab.westlake.edu.cn/data/SMR/Brain-mMeta.tar.gz"
+  n_effective: 1160        # Qi et al. 2018 brain meQTL meta-analysis
+  smr_url: "https://yanglab.westlake.edu.cn/software/smr/download/smr-1.3.1-linux-x86_64.zip"
+
 annotations:
   # Roadmap 15-state chromHMM, hg38lift. Fetal brain male/female + adult
   # DLPFC as the matched adult contrast.

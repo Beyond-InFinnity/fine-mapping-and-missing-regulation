@@ -35,7 +35,8 @@ opts <- parse_args(OptionParser(option_list = list(
   make_option("--min-overlap", type = "integer", dest = "min_overlap"),
   make_option("--out", type = "character")
 )))
-stopifnot(opts$source_type %in% c("eqtl_catalogue", "metabrain", "bryois"))
+stopifnot(opts$source_type %in% c("eqtl_catalogue", "metabrain", "bryois",
+                                  "smr_meqtl"))
 
 EQTLCAT_COLS <- c("molecular_trait_id", "chromosome", "position", "ref", "alt",
                   "variant", "ma_samples", "maf", "pvalue", "beta", "se",
@@ -67,9 +68,9 @@ stopifnot(identical(names(gwas), c("CHR", "POS", "ID", "A1", "A2", "FCAS",
                                    "FCON", "INFO", "BETA", "SE", "PVAL",
                                    "NCAS", "NCON", "NEFF2")))
 stopifnot(nrow(gwas) > 0)
-if (opts$source_type == "bryois") {
-  # Bryois pair files identify variants by rsID only, so the join key is
-  # the rsID (positions/alleles/MAF are attached from snp_pos upstream)
+if (opts$source_type %in% c("bryois", "smr_meqtl")) {
+  # these sources identify variants by rsID (and smr_meqtl positions are
+  # hg19), so the join key is the rsID
   gwas[, key := ID]
 } else {
   gwas[, key := variant_key(CHR, POS, A1, A2)]
@@ -117,6 +118,31 @@ if (opts$source_type == "eqtl_catalogue") {
     eq[, gene := gene_id]
     eq[, n_snp := eqtl_n]
     eq[, position := pos]
+  }
+} else if (opts$source_type == "smr_meqtl") {
+  # SMR --query text output: one row per CpG-probe x SNP, hg19, betas/SEs
+  # and allele frequency native to the file
+  eq <- fread(opts$eqtl_region, header = TRUE, sep = "\t")
+  stopifnot(all(c("SNP", "Chr", "BP", "A1", "A2", "Freq", "Probe",
+                  "Gene", "b", "SE", "p") %in% names(eq)))
+  eqtl_n <- as.integer(opts$sample_size)
+  stopifnot(is.finite(eqtl_n), eqtl_n > 0)
+  if (nrow(eq) > 0) {
+    eq[, beta := as.numeric(b)]
+    eq[, se := as.numeric(SE)]
+    eq[, maf := pmin(as.numeric(Freq), 1 - as.numeric(Freq))]
+    eq <- eq[is.finite(beta) & is.finite(se) & se > 0 &
+             is.finite(maf) & maf > 0 & maf < 1]
+    eq[, key := SNP]
+    eq[, gene := Probe]          # trait = CpG probe
+    eq[, gene_symbol := Gene]    # annotated nearest/assigned gene
+    eq[, n_snp := eqtl_n]
+    eq[, position := BP]         # hg19; only used for coloc bookkeeping
+    eq[, pvalue := as.numeric(p)]
+    # drop raw SMR columns (SE/A1/A2/...) that would collide with GWAS
+    # column names in the merge and get silently suffixed away
+    eq <- eq[, .(key, gene, gene_symbol, beta, se, maf, n_snp,
+                 position, pvalue)]
   }
 } else {  # metabrain
   eq <- fread(opts$eqtl_region, header = TRUE, sep = "\t")
@@ -179,11 +205,21 @@ for (g in unique(eq$gene)) {
       snp = m$key, position = m$POS, type = "quant"
     )
     min_p_eqtl <- min(m$pvalue)
+  } else if (opts$source_type == "smr_meqtl") {
+    # position must be the GWAS (hg38) coordinate: coloc.abf merges its two
+    # internal frames on snp AND position, so mixed builds empty the join
+    d_eqtl <- list(
+      beta = m$beta, varbeta = m$se^2, MAF = m$maf, N = m$n_snp[1],
+      snp = m$key, position = m$POS, type = "quant"
+    )
+    min_p_eqtl <- min(m$pvalue)
   } else if (opts$source_type == "bryois") {
-    # no SE in the pair files: p-value route with native MAF and donor N
+    # no SE in the pair files: p-value route with native MAF and donor N.
+    # position = GWAS coordinate (see smr_meqtl note: coloc.abf joins on
+    # snp AND position, so both sides must quote the same source)
     d_eqtl <- list(
       pvalues = m$pvalue, MAF = m$maf, N = m$n_snp[1],
-      snp = m$key, position = m$position, type = "quant"
+      snp = m$key, position = m$POS, type = "quant"
     )
     min_p_eqtl <- min(m$pvalue)
   } else {
