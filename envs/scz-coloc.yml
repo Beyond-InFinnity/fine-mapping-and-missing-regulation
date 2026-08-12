@@ -14,6 +14,7 @@ dependencies:
   - r-data.table
   - r-r.utils        # fread gz support
   - r-jsonlite
+  - r-ggplot2        # susieR::kriging_rss LD-mismatch diagnostic
   - r-optparse
   - snakemake-minimal=9.25.1
   - htslib=1.24

@@ -77,6 +77,14 @@ fit <- susie_rss(z = m$z, R = R, n = n_gwas_eff, L = opts$L,
                  coverage = opts$coverage,
                  estimate_residual_variance = FALSE)
 
+# LD-mismatch diagnostic: for each variant, how surprising is its z given
+# all other z's under the panel LD? Large |standardized difference| flags
+# panel/GWAS LD discordance (allele flips, mismatched haplotypes).
+kr <- kriging_rss(z = m$z, R = R, n = n_gwas_eff)
+z_std_diff <- kr$conditional_dist$z_std_diff
+n_ld_outliers <- sum(abs(z_std_diff) > 3)
+max_abs_z_std_diff <- max(abs(z_std_diff))
+
 # ---------------------------------------------------------------- outputs
 cs_rows <- list()
 if (!is.null(fit$sets$cs)) {
@@ -110,7 +118,10 @@ summary <- list(
   n_gwas_eff = n_gwas_eff,
   converged = isTRUE(fit$converged), niter = fit$niter,
   n_cs = length(fit$sets$cs), L = opts$L, coverage = opts$coverage,
-  max_abs_z = max(abs(m$z))
+  max_abs_z = max(abs(m$z)),
+  n_ld_outliers = n_ld_outliers,
+  frac_ld_outliers = n_ld_outliers / n_matched,
+  max_abs_z_std_diff = max_abs_z_std_diff
 )
 write_json(summary, paste0(opts$out_prefix, ".summary.json"),
            auto_unbox = TRUE, digits = 6)
