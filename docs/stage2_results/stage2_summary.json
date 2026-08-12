@@ -1,0 +1,83 @@
+{
+  "n_analysed": 281,
+  "pp4_threshold": 0.8,
+  "n_non_coloc_stage1": 191,
+  "heterogeneity": {
+    "n_cs_distribution": {
+      "0": 33,
+      "1": 135,
+      "2": 84,
+      "3": 18,
+      "4": 5,
+      "5": 6
+    },
+    "frac_multi_cs_non_coloc": 0.4083769633507853,
+    "frac_multi_cs_coloc": 0.3888888888888889,
+    "fisher_or": 1.0847029077117574,
+    "fisher_p": 0.795174391381887,
+    "n_rescued_by_coloc_susie": 22,
+    "n_demoted_by_coloc_susie": 23,
+    "n_abf_coloc_same6": 85,
+    "n_susie_not_converged": 2
+  },
+  "power": {
+    "ladder": [
+      {
+        "dataset": "QTD000176",
+        "n_eqtl": 175,
+        "frac_coloc": 0.05693950177935943,
+        "n_coloc": 16
+      },
+      {
+        "dataset": "QTD000051",
+        "n_eqtl": 479,
+        "frac_coloc": 0.11387900355871886,
+        "n_coloc": 32
+      },
+      {
+        "dataset": "QTD000434",
+        "n_eqtl": 560,
+        "frac_coloc": 0.1708185053380783,
+        "n_coloc": 48
+      },
+      {
+        "dataset": "QTD000075",
+        "n_eqtl": 586,
+        "frac_coloc": 0.16370106761565836,
+        "n_coloc": 46
+      },
+      {
+        "dataset": "MetaBrain_Cortex_EUR",
+        "n_eqtl": 2683,
+        "frac_coloc": 0.19572953736654805,
+        "n_coloc": 55
+      }
+    ],
+    "logit_beta_log10n": 0.9090117878814897,
+    "logit_p": 3.769739322014051e-06,
+    "logit_or_per_10x_n": 2.4818687084005235
+  },
+  "cell_type": {
+    "n_coloc_any_celltype": 37,
+    "n_sc_only_vs_bulk_cortex": 13,
+    "per_celltype_coloc_counts": {
+      "Bryois_Astrocytes": 5,
+      "Bryois_Endothelial_cells": 1,
+      "Bryois_Excitatory_neurons": 23,
+      "Bryois_Inhibitory_neurons": 4,
+      "Bryois_Microglia": 1,
+      "Bryois_OPCs_COPs": 0,
+      "Bryois_Oligodendrocytes": 12,
+      "Bryois_Pericytes": 0
+    }
+  },
+  "fetal": {
+    "n_fetal_coloc": 20,
+    "n_fetal_coloc_among_non_coloc": 5,
+    "mean_fetal_reg_pip_non_coloc": 0.0844379518072289,
+    "mean_fetal_reg_pip_coloc": 0.13765853658536586,
+    "mwu_p_fetal_reg_pip": 0.0011222348646344141,
+    "fetal_only_reg_fisher_or": 0.9543088490456911,
+    "fetal_only_reg_fisher_p": 0.8927355006615305
+  }
+}
