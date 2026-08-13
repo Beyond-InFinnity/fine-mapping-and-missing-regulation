@@ -858,6 +858,99 @@ rule fetal_mqtl_overlap:
         "--out {output}"
 
 
+# ----------------------------- CpG -> gene nomination (meQTL-eQTL chain)
+rule meqtl_eqtl_chain:
+    input:
+        gm=f"{RES}/coloc/Brain_mMeta_meQTL/{{locus}}.tsv",
+        meqtl=f"{DATA}/regions/meqtl_brain_mmeta/{{locus}}.tsv",
+        flag=lambda wc: (f"{DATA}/regions/metabrain/"
+                         f"chr{locus_field(wc.locus, 'chrom')}.done"),
+    output:
+        f"{RES}/chain/{{locus}}.tsv"
+    params:
+        mb=lambda wc: (f"{DATA}/regions/metabrain/"
+                       f"chr{locus_field(wc.locus, 'chrom')}/{wc.locus}.tsv.gz"),
+        thr=config["coloc"]["pp4_threshold"],
+        n=config["meqtl"]["n_effective"],
+        p1=config["coloc"]["p1"],
+        p2=config["coloc"]["p2"],
+        p12=config["coloc"]["p12"],
+        min_overlap=config["coloc"]["min_overlap_variants"],
+    shell:
+        "Rscript scripts/meqtl_eqtl_chain.R --gwas-meqtl-coloc {input.gm} "
+        "--meqtl-region {input.meqtl} --metabrain-region {params.mb} "
+        "--locus-id {wildcards.locus} --pp4-threshold {params.thr} "
+        "--meqtl-n {params.n} --p1 {params.p1} --p2 {params.p2} "
+        "--p12 {params.p12} --min-overlap {params.min_overlap} "
+        "--out {output}"
+
+
+rule download_gencode19:
+    output:
+        f"{DATA}/raw/annotation/gencode.v19.annotation.gtf.gz"
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} \
+            'https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule gencode_tss:
+    input:
+        f"{DATA}/raw/annotation/gencode.v19.annotation.gtf.gz"
+    output:
+        f"{DATA}/derived/annotation/gencode19_tss.tsv"
+    shell:
+        r"""
+        mkdir -p $(dirname {output})
+        zcat {input} | awk -F'\t' '$3=="gene"' | \
+        awk -F'\t' '{{
+            tss = ($7=="+") ? $4 : $5
+            match($9, /gene_id "[^"]+"/); gid = substr($9, RSTART+9, RLENGTH-10)
+            match($9, /gene_name "[^"]+"/); gname = substr($9, RSTART+11, RLENGTH-12)
+            match($9, /gene_type "[^"]+"/); gtype = substr($9, RSTART+11, RLENGTH-12)
+            sub(/\..*$/, "", gid)
+            sub(/^chr/, "", $1)
+            print $1"\t"tss"\t"gid"\t"gname"\t"gtype
+        }}' > {output}
+        n=$(wc -l < {output})
+        if [ "$n" -lt 40000 ]; then echo "FATAL: only $n genes parsed" >&2; exit 1; fi
+        """
+
+
+def chain_files(wildcards):
+    return [f"{RES}/chain/{l}.tsv" for l in analysed_loci()]
+
+
+rule nominate_genes:
+    input:
+        chain=chain_files,
+        tss=f"{DATA}/derived/annotation/gencode19_tss.tsv",
+        ledger=f"{RES}/final/ledger_per_locus.tsv",
+        gene_level=f"{RES}/stage1/coloc_gene_level.tsv.gz",
+        meqtl_dir_flag=f"{RES}/stage4/meqtl_coloc.done",
+        loci=f"{DATA}/derived/loci_hg38.tsv",
+    output:
+        nominations=f"{RES}/final/gene_nominations.tsv",
+        summary=f"{RES}/final/nominations_summary.json",
+    params:
+        chain_dir=f"{RES}/chain",
+        meqtl_dir=f"{RES}/coloc/Brain_mMeta_meQTL",
+        meqtl_region_dir=f"{DATA}/regions/meqtl_brain_mmeta",
+        thr=config["coloc"]["pp4_threshold"],
+    shell:
+        "python scripts/nominate_genes.py --chain-dir {params.chain_dir} "
+        "--tss {input.tss} --ledger {input.ledger} "
+        "--gene-level {input.gene_level} --meqtl-dir {params.meqtl_dir} "
+        "--meqtl-region-dir {params.meqtl_region_dir} --loci {input.loci} "
+        "--pp4-threshold {params.thr} --out {output.nominations} "
+        "--out-summary {output.summary}"
+
+
 # --------------------------------------- Stage 2d: chromHMM CS annotation
 rule download_chromhmm:
     output:
