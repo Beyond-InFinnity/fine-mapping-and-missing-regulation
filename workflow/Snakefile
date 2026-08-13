@@ -922,6 +922,31 @@ rule gencode_tss:
         """
 
 
+rule final_ledger:
+    input:
+        per_locus=f"{RES}/stage1/per_locus_table.tsv",
+        explanations=f"{RES}/stage2/explanations.tsv",
+        datasets=config["datasets_tsv"],
+        sqtl_flag=f"{RES}/sqtl/coloc.done",
+        meqtl_flag=f"{RES}/stage4/meqtl_coloc.done",
+        eur_flag=f"{RES}/robustness/eur_coloc.done",
+        fetal=f"{RES}/stage4/fetal_mqtl_overlap.tsv",
+    output:
+        json=f"{RES}/final/ledger.json",
+        table=f"{RES}/final/ledger_per_locus.tsv",
+    params:
+        thr=config["coloc"]["pp4_threshold"],
+        coloc_dir=f"{RES}/coloc",
+        eur_dir=f"{RES}/coloc_eur",
+    shell:
+        "python scripts/final_ledger.py "
+        "--per-locus-stage1 {input.per_locus} "
+        "--explanations {input.explanations} --datasets {input.datasets} "
+        "--coloc-dir {params.coloc_dir} --coloc-eur-dir {params.eur_dir} "
+        "--fetal-mqtl {input.fetal} --pp4-threshold {params.thr} "
+        "--out-json {output.json} --out-table {output.table}"
+
+
 def chain_files(wildcards):
     return [f"{RES}/chain/{l}.tsv" for l in analysed_loci()]
 
