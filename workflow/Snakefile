@@ -885,6 +885,42 @@ rule meqtl_eqtl_chain:
         "--out {output}"
 
 
+rule download_gencode38_gtf:
+    output:
+        f"{DATA}/raw/annotation/gencode.v26.annotation.gtf.gz"
+    resources:
+        net=1
+    shell:
+        r"""
+        curl -sSL --retry 3 -o {output} \
+            'https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.annotation.gtf.gz'
+        gzip -t {output}
+        sha256sum {output} > {output}.sha256
+        """
+
+
+rule gencode38_genes:
+    input:
+        f"{DATA}/raw/annotation/gencode.v26.annotation.gtf.gz"
+    output:
+        f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv"
+    shell:
+        r"""
+        mkdir -p $(dirname {output})
+        zcat {input} | awk -F'\t' '$3=="gene"' | \
+        awk -F'\t' '{{
+            match($9, /gene_id "[^"]+"/); gid = substr($9, RSTART+9, RLENGTH-10)
+            match($9, /gene_name "[^"]+"/); gname = substr($9, RSTART+11, RLENGTH-12)
+            match($9, /gene_type "[^"]+"/); gtype = substr($9, RSTART+11, RLENGTH-12)
+            sub(/\..*$/, "", gid)
+            sub(/^chr/, "", $1)
+            print $1"\t"$4"\t"$5"\t"$7"\t"gid"\t"gname"\t"gtype
+        }}' > {output}
+        n=$(wc -l < {output})
+        if [ "$n" -lt 40000 ]; then echo "FATAL: only $n genes parsed" >&2; exit 1; fi
+        """
+
+
 rule download_gencode19:
     output:
         f"{DATA}/raw/annotation/gencode.v19.annotation.gtf.gz"
@@ -974,6 +1010,80 @@ rule nominate_genes:
         "--meqtl-region-dir {params.meqtl_region_dir} --loci {input.loci} "
         "--pp4-threshold {params.thr} --out {output.nominations} "
         "--out-summary {output.summary}"
+
+
+# ------------------------------------------------ publication figure set
+rule fig_regional_furin:
+    input:
+        gwas=f"{DATA}/regions/gwas/15-rs4702.tsv",
+        genes=f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv",
+        bed=f"{DATA}/derived/ld/panel_chr15.bed",
+        flag=f"{DATA}/regions/metabrain/chr15.done",
+    output:
+        multiext(f"{RES}/figures/fig_regional_furin", ".pdf", ".png")
+    params:
+        mb=f"{DATA}/regions/metabrain/chr15/15-rs4702.tsv.gz",
+        bfile=f"{DATA}/derived/ld/panel_chr15",
+        prefix=f"{RES}/figures/fig_regional_furin",
+    shell:
+        "python scripts/fig_regional.py --gwas-region {input.gwas} "
+        "--track 'SCZ GWAS:gwas:{input.gwas}' "
+        "--track 'FURIN eQTL (MetaBrain cortex):metabrain:{params.mb}:ENSG00000140564' "
+        "--bfile {params.bfile} --genes {input.genes} --chrom 15 "
+        "--title 'Positive control: FURIN at rs4702 (PP4 = 1.00)' "
+        "--out-prefix {params.prefix}"
+
+
+rule fig_regional_demotion:
+    input:
+        gwas=f"{DATA}/regions/gwas/22-rs9607782.tsv",
+        genes=f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv",
+        bed=f"{DATA}/derived/ld/panel_chr22.bed",
+        eqtl=f"{DATA}/regions/QTD000171/22-rs9607782.tsv.gz",
+    output:
+        multiext(f"{RES}/figures/fig_regional_demotion", ".pdf", ".png")
+    params:
+        bfile=f"{DATA}/derived/ld/panel_chr22",
+        prefix=f"{RES}/figures/fig_regional_demotion",
+    shell:
+        "python scripts/fig_regional.py --gwas-region {input.gwas} "
+        "--track 'SCZ GWAS:gwas:{input.gwas}' "
+        "--track 'ENSG00000232710 eQTL (GTEx cortex):eqtlcat:{input.eqtl}:ENSG00000232710' "
+        "--bfile {params.bfile} --genes {input.genes} --chrom 22 "
+        "--title 'Single-variant coloc hit dissolved by fine-mapping (abf PP4 = 0.97, SuSiE PP3 = 0.98)' "
+        "--out-prefix {params.prefix}"
+
+
+rule fig_regional_chain:
+    input:
+        gwas=f"{DATA}/regions/gwas/22-rs6010045.tsv",
+        genes=f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv",
+        bed=f"{DATA}/derived/ld/panel_chr22.bed",
+        meqtl=f"{DATA}/regions/meqtl_brain_mmeta/22-rs6010045.tsv",
+        flag=f"{DATA}/regions/metabrain/chr22.done",
+    output:
+        multiext(f"{RES}/figures/fig_regional_chain", ".pdf", ".png")
+    params:
+        mb=f"{DATA}/regions/metabrain/chr22/22-rs6010045.tsv.gz",
+        bfile=f"{DATA}/derived/ld/panel_chr22",
+        prefix=f"{RES}/figures/fig_regional_chain",
+    shell:
+        "python scripts/fig_regional.py --gwas-region {input.gwas} "
+        "--track 'SCZ GWAS:gwas:{input.gwas}' "
+        "--track 'cg08719749 meQTL (Brain-mMeta):meqtl:{input.meqtl}:cg08719749' "
+        "--track 'ZBED4 eQTL (MetaBrain cortex):metabrain:{params.mb}:ENSG00000100426' "
+        "--bfile {params.bfile} --genes {input.genes} --chrom 22 "
+        "--title 'Transitive nomination at rs6010045: GWAS, methylation, and expression' "
+        "--out-prefix {params.prefix}"
+
+
+rule figure_set:
+    input:
+        f"{RES}/figures/fig_regional_furin.pdf",
+        f"{RES}/figures/fig_regional_demotion.pdf",
+        f"{RES}/figures/fig_regional_chain.pdf",
+    output:
+        touch(f"{RES}/figures/regional.done")
 
 
 # --------------------------------------- Stage 2d: chromHMM CS annotation
