@@ -5,6 +5,27 @@ why do PGC3 SCZ loci colocalize with brain eQTLs less often than expected?
 
 Everything runs on **public summary statistics** — no controlled data.
 
+## Headline findings
+
+Across 281 analysable PGC3 SCZ loci (PP4 > 0.8 throughout):
+
+- Only **9.6%** colocalize with GTEx cortex eQTLs; **32%** with any of 14 bulk
+  brain expression datasets — the "missing regulation" gap replicates.
+- eQTL power scales colocalization (OR 2.5 per 10× N) but saturates ≈25%;
+  multi-signal coloc-SuSiE reclassifies ~26% of single-variant calls in
+  *both* directions; heterogeneity is not enriched among misses.
+- Splicing QTLs add 47 loci; **brain methylation (Brain-mMeta meQTL,
+  n≈1,160) colocalizes at 193/281 loci — including 118 of the 191
+  expression-orphan loci** (6× the per-test rate of expression; robust to
+  PP4 > 0.95). The unexplained core shrinks from 57% to **23% (65 loci)**.
+- Interpretation: most "missing regulation" loci are epigenetically active
+  in adult brain; current eQTL catalogs miss the transcriptional readout,
+  not the regulation. A meQTL→eQTL transitive chain nominates target genes
+  for the methylation-explained loci.
+
+Full narrative: `report/report.qmd` (rendered HTML self-contained) and the
+staged reports in `docs/`.
+
 ## Stages
 
 - **Stage 0 — Feasibility audit** ([docs/stage0_audit.md](docs/stage0_audit.md)) ✅

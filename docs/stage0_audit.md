@@ -12,7 +12,7 @@ Three machines on the tailnet, all verified reachable via non-interactive SSH (s
 
 | Machine (ssh alias) | CPU | RAM | Free disk | GPU | Role |
 |---|---|---|---|---|---|
-| Laptop `connor-alienware-m15-r6` (this machine) | 16 cores | 15.6 GB (~12 in use) | 175 GB | RTX 3070 Laptop 8 GB | Dev/driving machine; audit ran here |
+| Laptop (this machine) | 16 cores | 15.6 GB (~12 in use) | 175 GB | RTX 3070 Laptop 8 GB | Dev/driving machine; audit ran here |
 | `claude-machine` / `box` | 4 cores | 31 GB (28 available) | 353 GB | GTX 1080 Ti 11 GB | Long-running downloads / background jobs |
 | **`workstation`** | **16 cores** | **62 GB (51 available)** | **342 GB** | RTX 5050 8 GB + RTX 3070 8 GB | **Recommended compute host for Stages 1–2** |
 
