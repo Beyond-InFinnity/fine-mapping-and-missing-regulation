@@ -11,11 +11,13 @@ Stage 1 found 90/281 loci (32%) with any brain-eQTL colocalization (PP4 > 0.8 ac
 | Explanation tested | Loci newly "explained" | Verdict |
 |---|---|---|
 | Stage 1 bulk coloc (baseline) | 90 | — |
-| (a) Multi-signal rescue (coloc-SuSiE) | +22 | real but symmetric — see below |
+| (a) Multi-signal rescue (coloc-SuSiE) | +23 | real but symmetric — see below |
 | (c) Single-cell-only coloc (8 Bryois cell types) | +6 | real, small at N=192; excitatory-neuron-dominated |
 | (d) Fetal-only coloc (Walker neocortex) | +4 | smallest direct contribution |
-| **Cumulative explained** | **122 / 281 (43%)** | |
-| **Unexplained** | **159 / 281 (57%)** | the enduring "missing regulation" core |
+| **Cumulative explained** | **123 / 281 (44%)** | |
+| **Unexplained** | **158 / 281 (56%)** | the enduring "missing regulation" core |
+
+*(Counts reflect the regenerated pipeline state; one borderline rescue crossed the 0.8 threshold when SuSiE outputs were re-derived with LD diagnostics, moving the original 22 to 23.)*
 
 ## (a) Allelic heterogeneity: it reshapes the answer more than it enlarges it
 

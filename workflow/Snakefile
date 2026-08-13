@@ -1074,7 +1074,7 @@ rule fig_regional_chain:
         "--track 'ZBED4 eQTL (MetaBrain cortex):metabrain:{params.mb}:ENSG00000100426' "
         "--bfile {params.bfile} --genes {input.genes} --chrom 22 "
         "--title 'Transitive nomination at rs6010045: GWAS, methylation, and expression' "
-        "--out-prefix {params.prefix}"
+        "--lead-rsid rs4075330 --out-prefix {params.prefix}"
 
 
 rule figure_set:

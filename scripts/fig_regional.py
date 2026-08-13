@@ -75,9 +75,14 @@ def load_track(spec, gwas):
     return label, df[["x", "logp", "key"]]
 
 
-def ld_lookup(gwas, bfile, tmpdir):
+def ld_lookup(gwas, bfile, tmpdir, lead_rsid=None):
     """r2 of every panel variant against the GWAS lead, keyed like GWAS."""
-    lead = gwas.loc[gwas["PVAL"].idxmin()]
+    if lead_rsid is not None:
+        sub = gwas[gwas["ID"] == lead_rsid]
+        assert len(sub) == 1, f"lead rsid {lead_rsid} not unique in region"
+        lead = sub.iloc[0]
+    else:
+        lead = gwas.loc[gwas["PVAL"].idxmin()]
     bim = pd.read_csv(f"{bfile}.bim", sep="\t", header=None,
                       names=["chr", "id", "cm", "pos", "a1", "a2"])
     bim["key"] = [variant_key(c, p, a, b) for c, p, a, b in
@@ -105,6 +110,8 @@ def main() -> None:
     ap.add_argument("--genes", required=True, help="gencode hg38 gene table")
     ap.add_argument("--chrom", required=True)
     ap.add_argument("--title", required=True)
+    ap.add_argument("--lead-rsid", default=None,
+                    help="color LD to this variant instead of the min-p variant")
     ap.add_argument("--out-prefix", required=True)
     args = ap.parse_args()
 
@@ -113,7 +120,7 @@ def main() -> None:
                    zip(gwas["CHR"], gwas["POS"], gwas["A1"], gwas["A2"])]
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        r2, lead_key = ld_lookup(gwas, args.bfile, tmpdir)
+        r2, lead_key = ld_lookup(gwas, args.bfile, tmpdir, args.lead_rsid)
 
     tracks = [load_track(s, gwas) for s in args.track]
     xmin = min(t["x"].min() for _, t in tracks)

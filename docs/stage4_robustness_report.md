@@ -9,7 +9,7 @@ Attribution is sequential and fixed a priori (coarse-to-fine); each locus counts
 | Channel | Newly explained | Total hits (PP4>0.8) |
 |---|---|---|
 | Bulk expression (14 datasets, Stage 1) | 90 | 90 |
-| Multi-signal rescue (coloc-SuSiE) | 22 | — |
+| Multi-signal rescue (coloc-SuSiE) | 23 | — |
 | Single-cell eQTL (8 cell types) | 6 | 37 |
 | Fetal eQTL | 4 | 20 |
 | **Splicing (17 brain sQTL datasets)** | **9** | **47** |
