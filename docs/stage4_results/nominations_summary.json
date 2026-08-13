@@ -1,0 +1,8 @@
+{
+  "n_loci_with_any_nomination": 116,
+  "n_loci_with_high_tier": 101,
+  "n_genes_high_tier": 402,
+  "n_expression_orphan_loci_with_nomination": 55,
+  "n_expression_orphan_loci_with_high_tier": 44,
+  "median_high_tier_direct_expression_pp4": 0.2413859723649065
+}

@@ -258,6 +258,14 @@ Robustness: EUR-only GWAS reruns agree with the primary analysis at
 fetal-mQTL overlap is *depleted* among expression misses (OR 0.30,
 p = 6e-4), echoing the chromatin-depletion result.
 
+Finally, a **transitive CpG→gene chain** (GWAS↔CpG PP4 × CpG↔MetaBrain-
+expression PP4) nominates target genes for the methylation-explained
+loci: 101 loci carry high-tier nominations (median 2 genes), including
+**44 expression-orphan loci** whose median direct expression PP4 was only
+0.24 — sub-threshold eQTL support elevated to gene-level candidacy by the
+methylation route (`results/final/gene_nominations.tsv`; anchors include
+ZBED4, ANKK1, HYKK, LY6H).
+
 ## Limitations
 
 1. **Reference-panel LD** (1000G n=503 vs N≈161k GWAS) limits GWAS-side

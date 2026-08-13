@@ -47,3 +47,12 @@ It means: at these loci the *same causal variant* that drives schizophrenia risk
 3. The residual hard core is now **65 loci (23%)** with no molecular colocalization in any tested layer — the true frontier, and the strongest candidates for developmental-window, cell-state-restricted, or non-cis mechanisms.
 
 `results/final/ledger_per_locus.tsv` carries the per-locus attribution, best splicing/methylation posteriors, and the 65-locus list.
+
+## CpG→gene nominations (transitive chain)
+
+For every GWAS-colocalizing CpG, its meQTL signal was colocalized against every MetaBrain gene in the locus; a gene's chain score is min(GWAS↔CpG PP4, CpG↔gene PP4), maximized over CpGs. Results (`results/final/gene_nominations.tsv`):
+
+- **116 loci** receive ≥1 nominated gene (chain ≥ 0.5); **101 at high tier (≥ 0.8)**, median 2 genes per locus.
+- **44 of the expression-orphan loci get high-tier nominations** — target genes for loci where no direct eQTL colocalization exists. Their median *direct* expression PP4 is 0.24: sub-threshold support that the methylation chain elevates.
+- Sanity anchors: ZBED4 at 22-rs6010045 (the Stage-1 "strong eQTL, PP3" case, now connected through cg08719749), ANKK1 (DRD2 neighborhood), HYKK (CHRNA5 region), LY6H at 8-rs4129585 (the same locus flagged by astrocyte sc-eQTL).
+- Caveat: chains inherit meQTL promiscuity — some nominations sit >500 kb from their CpG (e.g. GYPA, KRT6C) and should be read with the `cpg_tss_dist` and `direct_expression_pp4` columns as filters. Transitivity is evidence of a shared variant along both edges, not proof of methylation→expression mediation.
