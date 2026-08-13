@@ -221,6 +221,43 @@ cand.columns = ["index SNP", "GWAS credible sets", "best sc PP4",
 cand
 ```
 
+## Extension: splicing, methylation, and robustness
+
+```{python}
+#| label: final-ledger
+fl = json.load(open(f"{RES}/results/final/ledger.json"))
+led = pd.DataFrame(fl["sequential_ledger"])
+led.columns = ["Channel", "Newly explained", "Total hits (PP4>0.8)"]
+led.loc[len(led)] = ["UNEXPLAINED", fl["n_unexplained_final"], ""]
+led
+```
+
+Extending the ledger to two further molecular layers changes the verdict
+qualitatively. **Splicing** (17 brain sQTL datasets): 47 loci colocalize,
+9 of them surviving every prior channel. **Methylation** (Brain-mMeta,
+~1,160 brains): **193/281 loci share a causal variant with a brain CpG,
+including 118 of the 191 expression-orphan loci** — collapsing the
+unexplained core from 57% to
+**`{python} f'{fl["frac_unexplained_final"]:.0%}'` (65 loci)**. This is
+not a trait-multiplicity artifact: per-test colocalization runs ~6× higher
+for methylation than expression (1.2% vs 0.2%) at comparable test counts
+per locus, and 68 expression-misses persist even at PP4 > 0.95.
+
+Interpretation: most "missing regulation" loci are demonstrably
+**epigenetically active in adult brain** — the shared causal variant moves
+DNA methylation — while the transcriptional consequence stays invisible to
+every surveyed eQTL context. Colocalization is mechanism-symmetric
+(methylation need not mediate risk), but combined with the credible-set
+chromatin depletion, the coherent reading is regulation whose expression
+effects are context-, state-, or timing-restricted, or buffered at steady
+state.
+
+Robustness: EUR-only GWAS reruns agree with the primary analysis at
+94–96% of classifications (Spearman PP4 ≈ 0.89); LD-mismatch diagnostics
+(kriging_rss) show a median 2% outlier fraction with no locus above 5%;
+fetal-mQTL overlap is *depleted* among expression misses (OR 0.30,
+p = 6e-4), echoing the chromatin-depletion result.
+
 ## Limitations
 
 1. **Reference-panel LD** (1000G n=503 vs N≈161k GWAS) limits GWAS-side

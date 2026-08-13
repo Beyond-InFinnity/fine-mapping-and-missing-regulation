@@ -1,0 +1,61 @@
+{
+  "n_analysed": 281,
+  "pp4_threshold": 0.8,
+  "sequential_ledger": [
+    {
+      "channel": "bulk_expression",
+      "newly_explained": 90,
+      "total_hits": 90
+    },
+    {
+      "channel": "susie_rescue",
+      "newly_explained": 23,
+      "total_hits": 23
+    },
+    {
+      "channel": "single_cell",
+      "newly_explained": 6,
+      "total_hits": 37
+    },
+    {
+      "channel": "fetal_eqtl",
+      "newly_explained": 4,
+      "total_hits": 20
+    },
+    {
+      "channel": "splicing",
+      "newly_explained": 9,
+      "total_hits": 47
+    },
+    {
+      "channel": "methylation",
+      "newly_explained": 84,
+      "total_hits": 193
+    }
+  ],
+  "n_unexplained_final": 65,
+  "frac_unexplained_final": 0.2313167259786477,
+  "meqtl": {
+    "n_coloc": 193,
+    "n_among_bulk_expression_misses": 118
+  },
+  "eur_sensitivity": {
+    "QTD000171": {
+      "n_coloc_primary": 27,
+      "n_coloc_eur": 25,
+      "classification_agreement": 0.9644128113879004,
+      "spearman_pp4": 0.8897224415623747
+    },
+    "MetaBrain_Cortex_EUR": {
+      "n_coloc_primary": 55,
+      "n_coloc_eur": 60,
+      "classification_agreement": 0.9392857142857143,
+      "spearman_pp4": 0.8944530998026579
+    }
+  },
+  "fetal_mqtl_overlap": {
+    "n_loci_any_hit": 43,
+    "fisher_or_miss_vs_hit": 0.30489864864864863,
+    "fisher_p": 0.0006082682302236038
+  }
+}
