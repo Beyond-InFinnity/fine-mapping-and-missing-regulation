@@ -65,6 +65,14 @@ mq <- mq[is.finite(beta_m) & is.finite(se_m) & se_m > 0 &
 mb <- fread(opts$mb_region, header = TRUE, sep = "\t")
 stopifnot(all(c("SNPName", "ProbeName", "HGNCName", "Meta-Beta",
                 "Meta-SE", "DatasetsNrSamples") %in% names(mb)))
+if (nrow(mb) == 0) {
+  finish(lapply(seq_len(nrow(hits)), function(i) row_out(
+    hits$gene[i], hits$pp_h4[i], NA_character_, NA_character_,
+    "no_metabrain_data")))
+}
+# SNPName format chr:pos:rsid:alleles; tolerate malformed names
+mb <- mb[vapply(strsplit(SNPName, ":", fixed = TRUE), length, 0L) >= 3]
+stopifnot(nrow(mb) > 0)
 mb[, rsid := tstrsplit(SNPName, ":", fixed = TRUE)[[3]]]
 mb <- mb[rsid != "nors"]
 mb[, beta_e := as.numeric(`Meta-Beta`)]
