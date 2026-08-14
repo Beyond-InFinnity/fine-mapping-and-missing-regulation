@@ -1,0 +1,76 @@
+- generic [active] [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - link "Missing Regulation in schizophrenia" [ref=f1e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f1e5]:
+        - link "Dashboard" [ref=f1e6] [cursor=pointer]:
+          - /url: /
+        - link "Gene nominations" [ref=f1e7] [cursor=pointer]:
+          - /url: /nominations/
+        - link "Regional plots" [ref=f1e8] [cursor=pointer]:
+          - /url: /regional/
+        - link "About" [ref=f1e9] [cursor=pointer]:
+          - /url: /about/
+      - link "GitHub ↗" [ref=f1e10] [cursor=pointer]:
+        - /url: https://github.com/Beyond-InFinnity/fine-mapping-and-missing-regulation
+  - main [ref=f1e11]:
+    - generic [ref=f1e12]:
+      - generic [ref=f1e13]:
+        - heading "Regional association plots" [level=1] [ref=f1e14]
+        - paragraph [ref=f1e15]: Three exemplar loci, one per major result. Hover any point for position, p-value, and LD to the lead variant; toggle tracks with the checkboxes.
+      - generic [ref=f1e16]:
+        - button "FURIN (positive control)" [ref=f1e17]
+        - button "rs9607782 (demotion)" [ref=f1e18]
+        - button "rs6010045 (methylation chain)" [ref=f1e19]
+      - paragraph [ref=f1e20]: The benchmark schizophrenia variant-to-gene case. The GWAS signal at rs4702 and the FURIN eQTL in MetaBrain cortex share the same lead variant and LD structure; coloc assigns PP4 = 1.00.
+      - generic [ref=f1e22]:
+        - generic [ref=f1e23]:
+          - generic [ref=f1e24]:
+            - checkbox "SCZ GWAS" [checked] [ref=f1e25]
+            - text: SCZ GWAS
+          - generic [ref=f1e26]:
+            - checkbox "FURIN eQTL (MetaBrain cortex)" [checked] [ref=f1e27]
+            - text: FURIN eQTL (MetaBrain cortex)
+          - generic [ref=f1e28]:
+            - generic [ref=f1e29]: r² ≥ 0.8
+            - generic [ref=f1e31]: r² ≥ 0.6
+            - generic [ref=f1e33]: r² ≥ 0.4
+            - generic [ref=f1e35]: r² ≥ 0.2
+            - generic [ref=f1e37]: r² < 0.2
+        - generic [ref=f1e39]:
+          - generic [ref=f1e40]: SCZ GWAS
+          - generic [ref=f1e41]: −log₁₀(p)
+        - generic [ref=f1e43]:
+          - generic [ref=f1e44]: FURIN eQTL (MetaBrain cortex)
+          - generic [ref=f1e45]: −log₁₀(p)
+        - img "Protein-coding genes in the region" [ref=f1e47]:
+          - generic [ref=f1e48]: AP3S2
+          - generic [ref=f1e51]: C15orf38-AP3S2
+          - generic [ref=f1e54]: ARPIN
+          - generic [ref=f1e57]: ZNF710
+          - generic [ref=f1e60]: IDH2
+          - generic [ref=f1e63]: SEMA4B
+          - generic [ref=f1e66]: CIB1
+          - generic [ref=f1e69]: GDPGP1
+          - generic [ref=f1e72]: TTLL13P
+          - generic [ref=f1e75]: RP11-697E2.6
+          - generic [ref=f1e78]: NGRN
+          - generic [ref=f1e81]: RP11-697E2.12
+          - generic [ref=f1e84]: ZNF774
+          - generic [ref=f1e87]: IQGAP1
+          - generic [ref=f1e90]: CRTC3
+          - generic [ref=f1e93]: BLM
+          - generic [ref=f1e96]: FURIN
+          - generic [ref=f1e99]: FES
+          - generic [ref=f1e102]: MAN2A2
+          - generic [ref=f1e105]: HDDC3
+          - generic [ref=f1e108]: UNC45A
+          - generic [ref=f1e111]: RCCD1
+          - generic [ref=f1e114]: PRC1
+          - generic [ref=f1e117]: VPS33B
+          - generic [ref=f1e120]: SV2B
+          - generic [ref=f1e123]: SLCO3A1
+          - generic [ref=f1e126]: chromosome 15 position (GRCh38); 89.88–91.88 Mb
+  - contentinfo [ref=f1e127]: Built from public summary statistics (PGC3, GTEx/eQTL Catalogue, MetaBrain, Bryois 2022, Walker 2019, Brain-mMeta, Roadmap, 1000 Genomes). Every number regenerates from the pipeline in the linked repository. PP4 refers to the coloc posterior probability of a shared causal variant.
+  - alert [ref=f1e128]
