@@ -1086,6 +1086,76 @@ rule figure_set:
         touch(f"{RES}/figures/regional.done")
 
 
+rule regional_json_furin:
+    input:
+        gwas=f"{DATA}/regions/gwas/15-rs4702.tsv",
+        genes=f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv",
+        bed=f"{DATA}/derived/ld/panel_chr15.bed",
+        flag=f"{DATA}/regions/metabrain/chr15.done",
+    output:
+        f"{RES}/webdata/regional_furin.json"
+    params:
+        mb=f"{DATA}/regions/metabrain/chr15/15-rs4702.tsv.gz",
+        bfile=f"{DATA}/derived/ld/panel_chr15",
+    shell:
+        "python scripts/export_regional_json.py --gwas-region {input.gwas} "
+        "--track 'SCZ GWAS:gwas:{input.gwas}' "
+        "--track 'FURIN eQTL (MetaBrain cortex):metabrain:{params.mb}:ENSG00000140564' "
+        "--bfile {params.bfile} --genes {input.genes} --chrom 15 "
+        "--title 'Positive control: FURIN at rs4702 (PP4 = 1.00)' "
+        "--out {output}"
+
+
+rule regional_json_demotion:
+    input:
+        gwas=f"{DATA}/regions/gwas/22-rs9607782.tsv",
+        genes=f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv",
+        bed=f"{DATA}/derived/ld/panel_chr22.bed",
+        eqtl=f"{DATA}/regions/QTD000171/22-rs9607782.tsv.gz",
+    output:
+        f"{RES}/webdata/regional_demotion.json"
+    params:
+        bfile=f"{DATA}/derived/ld/panel_chr22",
+    shell:
+        "python scripts/export_regional_json.py --gwas-region {input.gwas} "
+        "--track 'SCZ GWAS:gwas:{input.gwas}' "
+        "--track 'ENSG00000232710 eQTL (GTEx cortex):eqtlcat:{input.eqtl}:ENSG00000232710' "
+        "--bfile {params.bfile} --genes {input.genes} --chrom 22 "
+        "--title 'A single-variant coloc hit dissolved by fine-mapping' "
+        "--out {output}"
+
+
+rule regional_json_chain:
+    input:
+        gwas=f"{DATA}/regions/gwas/22-rs6010045.tsv",
+        genes=f"{DATA}/derived/annotation/gencode26_genes_hg38.tsv",
+        bed=f"{DATA}/derived/ld/panel_chr22.bed",
+        meqtl=f"{DATA}/regions/meqtl_brain_mmeta/22-rs6010045.tsv",
+        flag=f"{DATA}/regions/metabrain/chr22.done",
+    output:
+        f"{RES}/webdata/regional_chain.json"
+    params:
+        mb=f"{DATA}/regions/metabrain/chr22/22-rs6010045.tsv.gz",
+        bfile=f"{DATA}/derived/ld/panel_chr22",
+    shell:
+        "python scripts/export_regional_json.py --gwas-region {input.gwas} "
+        "--track 'SCZ GWAS:gwas:{input.gwas}' "
+        "--track 'cg08719749 meQTL (Brain-mMeta):meqtl:{input.meqtl}:cg08719749' "
+        "--track 'ZBED4 eQTL (MetaBrain cortex):metabrain:{params.mb}:ENSG00000100426' "
+        "--bfile {params.bfile} --genes {input.genes} --chrom 22 "
+        "--title 'Transitive nomination at rs6010045' "
+        "--lead-rsid rs4075330 --out {output}"
+
+
+rule regional_json_all:
+    input:
+        f"{RES}/webdata/regional_furin.json",
+        f"{RES}/webdata/regional_demotion.json",
+        f"{RES}/webdata/regional_chain.json",
+    output:
+        touch(f"{RES}/webdata/regional.done")
+
+
 # --------------------------------------- Stage 2d: chromHMM CS annotation
 rule download_chromhmm:
     output:
