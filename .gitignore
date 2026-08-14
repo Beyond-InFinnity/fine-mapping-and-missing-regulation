@@ -14,3 +14,7 @@ fastenloc
 .Rhistory
 __pycache__/
 .ipynb_checkpoints/
+.playwright-mcp/
+*.png
+!docs/**/*.png
+!manuscript/figures/*.png
