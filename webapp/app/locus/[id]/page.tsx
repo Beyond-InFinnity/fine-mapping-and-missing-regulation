@@ -21,11 +21,11 @@ export default async function LocusPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/" className="text-xs text-zinc-500 hover:underline">
+        <Link href="/" className="text-xs text-[var(--muted)] hover:text-[var(--gold)]">
           ← all loci
         </Link>
         <div className="mt-1 flex flex-wrap items-baseline gap-3">
-          <h1 className="text-xl font-semibold">{l.id}</h1>
+          <h1 className="font-display text-3xl">{l.id}</h1>
           <span
             className="rounded-full px-2.5 py-0.5 text-xs text-white"
             style={{ background: meta.color }}
@@ -33,10 +33,10 @@ export default async function LocusPage({
             {meta.label}
           </span>
         </div>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-[var(--muted)]">
           {fmtPos(l.chrom, l.pos)} · index{" "}
           <a
-            className="text-blue-700 hover:underline dark:text-blue-400"
+            className="lnk"
             href={`https://www.ncbi.nlm.nih.gov/snp/${l.indexSnp}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -48,8 +48,8 @@ export default async function LocusPage({
       </div>
 
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-3 text-sm font-semibold">
+        <div className="panel p-5">
+          <h2 className="kicker mb-3 !text-[var(--gold)]">
             Colocalization evidence (best PP4 per channel)
           </h2>
           <div className="space-y-2">
@@ -57,10 +57,10 @@ export default async function LocusPage({
               const v = l.channels[c.key];
               return (
                 <div key={c.key} className="flex items-center gap-2 text-xs">
-                  <span className="w-28 shrink-0 text-zinc-500">
+                  <span className="w-28 shrink-0 text-[var(--muted)]">
                     {c.label}
                   </span>
-                  <div className="relative h-3 flex-1 rounded bg-zinc-100 dark:bg-zinc-800">
+                  <div className="relative h-3 flex-1 rounded bg-[var(--panel-2)]">
                     {v !== null && (
                       <div
                         className="h-3 rounded"
@@ -71,7 +71,7 @@ export default async function LocusPage({
                         }}
                       />
                     )}
-                    <div className="absolute inset-y-0 left-[80%] w-px bg-zinc-400/70" />
+                    <div className="absolute inset-y-0 left-[80%] w-px bg-[var(--rose)]" />
                   </div>
                   <span className="w-10 text-right tabular-nums">
                     {v === null ? "–" : v.toFixed(2)}
@@ -80,28 +80,28 @@ export default async function LocusPage({
               );
             })}
           </div>
-          <p className="mt-2 text-[11px] text-zinc-400">
+          <p className="mt-2 text-[11px] text-[var(--muted)]">
             Vertical line marks the PP4 = 0.8 threshold.
           </p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-3 text-sm font-semibold">Fine-mapping and annotation</h2>
+        <div className="panel p-5 text-sm">
+          <h2 className="kicker mb-3 !text-[var(--gold)]">Fine-mapping and annotation</h2>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <dt className="text-zinc-500">GWAS credible sets (SuSiE)</dt>
+            <dt className="text-[var(--muted)]">GWAS credible sets (SuSiE)</dt>
             <dd className="tabular-nums">{l.nGwasCs ?? "–"}</dd>
-            <dt className="text-zinc-500">CS mass in fetal regulatory chromatin</dt>
+            <dt className="text-[var(--muted)]">CS mass in fetal regulatory chromatin</dt>
             <dd className="tabular-nums">{l.fetalRegPip ?? "–"}</dd>
-            <dt className="text-zinc-500">CS mass in adult regulatory chromatin</dt>
+            <dt className="text-[var(--muted)]">CS mass in adult regulatory chromatin</dt>
             <dd className="tabular-nums">{l.adultRegPip ?? "–"}</dd>
-            <dt className="text-zinc-500">Best bulk-eQTL gene</dt>
+            <dt className="text-[var(--muted)]">Best bulk-eQTL gene</dt>
             <dd className="italic">{l.bestBulkGene ?? "–"}</dd>
-            <dt className="text-zinc-500">Best single-cell type</dt>
+            <dt className="text-[var(--muted)]">Best single-cell type</dt>
             <dd>{l.bestScCt?.replaceAll("_", " ") ?? "–"}</dd>
-            <dt className="text-zinc-500">External</dt>
+            <dt className="text-[var(--muted)]">External</dt>
             <dd>
               <a
-                className="text-blue-700 hover:underline dark:text-blue-400"
+                className="lnk"
                 href={`https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr${l.chrom}%3A${l.pos - 500000}-${l.pos + 500000}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -114,36 +114,36 @@ export default async function LocusPage({
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold">
+        <h2 className="kicker mb-3 !text-[var(--gold)]">
           Gene nominations via methylation chain ({noms.length})
         </h2>
         {noms.length === 0 ? (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-[var(--muted)]">
             No chained nominations at this locus (requires a GWAS-colocalizing
             CpG plus a CpG-gene expression link).
           </p>
         ) : (
-          <div className="overflow-auto rounded border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full min-w-[560px] text-xs">
-              <thead className="bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+          <div className="panel overflow-auto !rounded-md">
+            <table className="table-dark w-full min-w-[560px] text-xs">
+              <thead className="">
                 <tr>
-                  <th className="px-2 py-1.5 text-left font-medium">Gene</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Tier</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Chain score</th>
-                  <th className="px-2 py-1.5 text-left font-medium">CpG</th>
-                  <th className="px-2 py-1.5 text-left font-medium">CpG–TSS dist</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Direct eQTL PP4</th>
+                  <th className="px-2 py-2 text-left">Gene</th>
+                  <th className="px-2 py-2 text-left">Tier</th>
+                  <th className="px-2 py-2 text-left">Chain score</th>
+                  <th className="px-2 py-2 text-left">CpG</th>
+                  <th className="px-2 py-2 text-left">CpG–TSS dist</th>
+                  <th className="px-2 py-2 text-left">Direct eQTL PP4</th>
                 </tr>
               </thead>
               <tbody>
                 {noms.map((n) => (
                   <tr
                     key={`${n.gene}-${n.cpg}`}
-                    className="border-t border-zinc-100 dark:border-zinc-800/60"
+                    className=""
                   >
                     <td className="px-2 py-1 italic">
                       <a
-                        className="text-blue-700 hover:underline dark:text-blue-400"
+                        className="lnk"
                         href={`https://platform.opentargets.org/target/${n.gene}`}
                         target="_blank"
                         rel="noopener noreferrer"

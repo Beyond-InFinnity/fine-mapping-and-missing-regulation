@@ -122,7 +122,7 @@ function Track({
       <div className="absolute left-12 top-1 z-10 text-xs font-semibold">
         {label}
       </div>
-      <div className="absolute -left-1 top-1/2 z-10 -rotate-90 text-[9px] text-zinc-400">
+      <div className="absolute -left-1 top-1/2 z-10 -rotate-90 text-[9px] text-[var(--muted)]">
         −log₁₀(p)
       </div>
       <canvas
@@ -133,7 +133,7 @@ function Track({
       />
       {hover && (
         <div
-          className="pointer-events-none absolute z-20 rounded border border-zinc-300 bg-white px-2 py-1 text-[11px] shadow dark:border-zinc-700 dark:bg-zinc-900"
+          className="pointer-events-none absolute z-20 rounded border border-[var(--line)] bg-[var(--panel-2)] px-2 py-1 text-[11px] text-[var(--ink)] shadow-lg"
           style={{
             left: Math.min(hover.x + 10, width - 190),
             top: Math.max(hover.y - 34, 0),
@@ -167,11 +167,11 @@ export default function RegionalPlot({ src }: { src: string }) {
 
   if (err)
     return (
-      <div className="rounded border border-red-300 p-4 text-sm text-red-700">
+      <div className="rounded border border-[var(--rose)] p-4 text-sm text-[var(--rose)]">
         Failed to load regional data: {err}
       </div>
     );
-  if (!data) return <div className="p-4 text-sm text-zinc-500">Loading…</div>;
+  if (!data) return <div className="p-4 text-sm text-[var(--muted)]">Loading…</div>;
 
   const xmin = Math.min(...data.tracks.flatMap((t) => t.pts.map((p) => p[0])));
   const xmax = Math.max(...data.tracks.flatMap((t) => t.pts.map((p) => p[0])));
@@ -203,7 +203,7 @@ export default function RegionalPlot({ src }: { src: string }) {
               {t.label}
             </label>
           ))}
-        <span className="ml-auto flex flex-wrap gap-2 text-[10px] text-zinc-500">
+        <span className="ml-auto flex flex-wrap gap-2 text-[10px] text-[var(--muted)]">
           {[4, 3, 2, 1, 0].map((b) => (
             <span key={b} className="flex items-center gap-1">
               <span
@@ -245,13 +245,13 @@ export default function RegionalPlot({ src }: { src: string }) {
                 y={y}
                 width={Math.max(2, Math.min(x2, 800 - PAD.r) - Math.max(PAD.l, x1))}
                 height={4}
-                className="fill-zinc-500"
+                className="fill-[var(--muted)]"
               />
               <text
                 x={(Math.max(PAD.l, x1) + Math.min(x2, 800 - PAD.r)) / 2}
                 y={y + 12}
                 textAnchor="middle"
-                className="fill-zinc-500 text-[7px] italic"
+                className="fill-[var(--muted)] text-[7px] italic"
               >
                 {g.n}
               </text>
@@ -262,7 +262,7 @@ export default function RegionalPlot({ src }: { src: string }) {
           x={400}
           y={nRows * GENE_ROW_H + 20}
           textAnchor="middle"
-          className="fill-zinc-400 text-[9px]"
+          className="fill-[var(--muted)] text-[9px]"
         >
           chromosome {data.chrom} position (GRCh38); {(xmin / 1e6).toFixed(2)}
           –{(xmax / 1e6).toFixed(2)} Mb

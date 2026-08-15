@@ -10,11 +10,11 @@ const ATTR_ORDER: Attribution[] = ATTRIBUTIONS.map((a) => a.key);
 function pp4Color(v: number | null): string {
   if (v === null) return "transparent";
   const t = Math.max(0, Math.min(1, v));
-  // light #f5f4f1 -> blue #2a78d6 -> dark #0d366b
+  // dark surface ramp: near-background navy -> blue -> bright ice
   const stops =
-    t < 0.5
-      ? { a: [245, 244, 241], b: [42, 120, 214], f: t * 2 }
-      : { a: [42, 120, 214], b: [13, 54, 107], f: (t - 0.5) * 2 };
+    t < 0.55
+      ? { a: [21, 29, 46], b: [42, 120, 214], f: t / 0.55 }
+      : { a: [42, 120, 214], b: [207, 230, 255], f: (t - 0.55) / 0.45 };
   const c = stops.a.map((x, i) => Math.round(x + (stops.b[i] - x) * stops.f));
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
@@ -52,11 +52,11 @@ export default function EvidenceHeatmap({
 
   return (
     <div className="relative">
-      <div className="mb-1 flex" style={{ paddingLeft: stripW + 4 }}>
+      <div className="mb-1.5 flex" style={{ paddingLeft: stripW + 4 }}>
         {CHANNELS.map((c) => (
           <div
             key={c.key}
-            className="text-[10px] text-zinc-500"
+            className="text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]"
             style={{ width: `${(100 / CHANNELS.length).toFixed(2)}%` }}
           >
             {c.label}
@@ -113,14 +113,16 @@ export default function EvidenceHeatmap({
       </svg>
       {hover && (
         <div
-          className="pointer-events-none absolute z-10 rounded border border-zinc-300 bg-white px-2 py-1 text-[11px] shadow dark:border-zinc-700 dark:bg-zinc-900"
+          className="pointer-events-none absolute z-10 rounded border border-[var(--line)] bg-[var(--panel-2)] px-2 py-1 text-[11px] text-[var(--ink)] shadow-lg"
           style={{
             left: Math.min(hover.x + 12, 320),
             top: Math.max(hover.y - 30, 0),
           }}
         >
-          <span className="font-medium">{hover.locus.id}</span> · {hover.ch}:{" "}
-          {hover.v === null ? "not tested" : hover.v.toFixed(2)}
+          <span className="font-medium text-[var(--gold-bright)]">
+            {hover.locus.id}
+          </span>{" "}
+          · {hover.ch}: {hover.v === null ? "not tested" : hover.v.toFixed(2)}
         </div>
       )}
     </div>

@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* NERVANALYTICA palette (from the site's chart style) */
+  --bg: #0a0e17;
+  --panel: #121a2b;
+  --panel-2: #1a2438;
+  --line: rgba(214, 222, 240, 0.10);
+  --ink: #ece7dc;
+  --ink-dim: #b8bdcc;
+  --muted: #7e879c;
+  --gold: #d4bc7f;
+  --gold-bright: #e6d199;
+  --lavender: #c9b8e2;
+  --rose: #b5525c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-lavender: var(--lavender);
+  --color-rose: var(--rose);
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-serif: var(--font-display), Georgia, serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+/* Reusable pieces of the house style */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+
+.kicker {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lnk {
+  color: var(--gold);
+}
+.lnk:hover {
+  color: var(--gold-bright);
+  text-decoration: underline;
+}
+
+.table-dark thead {
+  background: var(--panel-2);
+}
+.table-dark thead th {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted);
+}
+.table-dark tbody tr {
+  border-top: 1px solid var(--line);
+}
+.table-dark tbody tr:hover {
+  background: rgba(212, 188, 127, 0.05);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--panel-2);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

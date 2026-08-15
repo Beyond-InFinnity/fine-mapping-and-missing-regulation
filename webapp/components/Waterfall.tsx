@@ -12,6 +12,16 @@ const STEP_TO_ATTR: Record<string, Attribution> = {
   methylation: "methylation",
 };
 
+const SHORT: Record<Attribution, string[]> = {
+  bulk_expression: ["BULK", "EXPRESSION"],
+  susie_rescue: ["MULTI-SIGNAL", "RESCUE"],
+  single_cell: ["SINGLE-CELL", "eQTL"],
+  fetal_eqtl: ["FETAL", "eQTL"],
+  splicing: ["SPLICING", ""],
+  methylation: ["METHYLATION", ""],
+  unexplained: ["UNEXPLAINED", ""],
+};
+
 export default function Waterfall({
   summary,
   selected,
@@ -30,8 +40,8 @@ export default function Waterfall({
   ];
   const total = summary.nLoci;
   const W = 720;
-  const H = 240;
-  const pad = { l: 34, r: 6, t: 14, b: 40 };
+  const H = 460;
+  const pad = { l: 40, r: 8, t: 22, b: 58 };
   const bw = (W - pad.l - pad.r) / steps.length;
   const y = (v: number) => pad.t + (1 - v / total) * (H - pad.t - pad.b);
 
@@ -51,29 +61,49 @@ export default function Waterfall({
       role="img"
       aria-label="Sequential attribution of loci across channels"
     >
-      {[0, 100, 200, total].map((t) => (
+      {[0, 100, 200].map((t) => (
         <g key={t}>
           <line
             x1={pad.l}
             x2={W - pad.r}
             y1={y(t)}
             y2={y(t)}
-            className="stroke-zinc-200 dark:stroke-zinc-800"
-            strokeDasharray={t === total ? "4 3" : undefined}
+            stroke="rgba(214,222,240,0.09)"
           />
           <text
-            x={pad.l - 5}
-            y={y(t) + 3}
+            x={pad.l - 6}
+            y={y(t) + 3.5}
             textAnchor="end"
-            className="fill-zinc-400 text-[9px]"
+            fill="var(--muted)"
+            fontSize={11}
           >
             {t}
           </text>
         </g>
       ))}
+      <line
+        x1={pad.l}
+        x2={W - pad.r}
+        y1={y(total)}
+        y2={y(total)}
+        stroke="var(--rose)"
+        strokeWidth={1}
+        strokeDasharray="5 4"
+        opacity={0.8}
+      />
+      <text
+        x={pad.l + 2}
+        y={y(total) - 6}
+        fill="var(--rose)"
+        fontSize={10.5}
+        letterSpacing={1.5}
+      >
+        ALL {total} LOCI
+      </text>
       {bars.map((b) => {
-        const x = pad.l + b.i * bw + bw * 0.14;
+        const x = pad.l + b.i * bw + bw * 0.13;
         const active = selected === null || selected === b.attr;
+        const cx = x + bw * 0.37;
         return (
           <g
             key={b.attr}
@@ -82,37 +112,57 @@ export default function Waterfall({
           >
             <rect
               x={x}
-              width={bw * 0.72}
+              width={bw * 0.74}
               y={y(b.bottom + b.n)}
               height={y(b.bottom) - y(b.bottom + b.n)}
-              rx={2}
+              rx={2.5}
               fill={b.meta.color}
-              opacity={active ? 1 : 0.25}
+              opacity={active ? 1 : 0.22}
             />
+            {b.i < bars.length - 1 && b.attr !== "unexplained" && (
+              <line
+                x1={x + bw * 0.74}
+                x2={pad.l + (b.i + 1) * bw + bw * 0.13}
+                y1={y(b.bottom + b.n)}
+                y2={y(b.bottom + b.n)}
+                stroke="var(--muted)"
+                strokeDasharray="2 3"
+                opacity={0.6}
+              />
+            )}
             <text
-              x={x + bw * 0.36}
-              y={y(b.bottom + b.n) - 4}
+              x={cx}
+              y={y(b.bottom + b.n) - 7}
               textAnchor="middle"
-              className="fill-zinc-700 text-[10px] font-medium dark:fill-zinc-200"
+              fill="var(--ink)"
+              fontSize={15}
+              fontWeight={600}
+              opacity={active ? 1 : 0.35}
             >
               {b.n}
             </text>
             <text
-              x={x + bw * 0.36}
-              y={H - pad.b + 12}
+              x={cx}
+              y={H - pad.b + 22}
               textAnchor="middle"
-              className="fill-zinc-500 text-[8.5px]"
+              fill={active ? "var(--ink-dim)" : "var(--muted)"}
+              fontSize={11}
+              fontWeight={500}
+              letterSpacing={0.6}
             >
-              {b.meta.label.split(" ").slice(0, 2).join(" ")}
+              {SHORT[b.attr][0]}
             </text>
-            {b.meta.label.split(" ").length > 2 && (
+            {SHORT[b.attr][1] && (
               <text
-                x={x + bw * 0.36}
-                y={H - pad.b + 22}
+                x={cx}
+                y={H - pad.b + 37}
                 textAnchor="middle"
-                className="fill-zinc-500 text-[8.5px]"
+                fill={active ? "var(--ink-dim)" : "var(--muted)"}
+                fontSize={11}
+                fontWeight={500}
+                letterSpacing={0.6}
               >
-                {b.meta.label.split(" ").slice(2).join(" ")}
+                {SHORT[b.attr][1]}
               </text>
             )}
           </g>

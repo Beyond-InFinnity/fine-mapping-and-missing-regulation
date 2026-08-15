@@ -29,8 +29,8 @@ export default function NominationsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Gene nominations</h1>
-        <p className="mt-1 max-w-3xl text-sm text-zinc-600 dark:text-zinc-300">
+        <h1 className="font-display text-3xl">Gene nominations</h1>
+        <p className="mt-1 max-w-3xl text-sm text-[var(--ink-dim)]">
           Candidate genes linked to risk loci through the methylation chain:
           chain score = min(GWAS↔CpG PP4, CpG↔gene PP4). Expression-orphan
           rows are loci with no direct eQTL colocalization anywhere. Distant
@@ -43,12 +43,12 @@ export default function NominationsPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search gene or locus…"
-          className="w-56 rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-56 rounded border border-[var(--line)] bg-[var(--panel)] px-2 py-1 text-[var(--ink)]"
         />
         <select
           value={tier}
           onChange={(e) => setTier(e.target.value as typeof tier)}
-          className="rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded border border-[var(--line)] bg-[var(--panel)] px-2 py-1 text-[var(--ink)]"
         >
           <option value="high">high tier (≥ 0.8)</option>
           <option value="suggestive">suggestive (0.5–0.8)</option>
@@ -70,12 +70,12 @@ export default function NominationsPage() {
           />
           CpG within 100 kb of TSS
         </label>
-        <span className="text-xs text-zinc-500">{rows.length} nominations</span>
+        <span className="text-xs text-[var(--muted)]">{rows.length} nominations</span>
       </div>
 
-      <div className="max-h-[600px] overflow-auto rounded border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[820px] text-xs">
-          <thead className="sticky top-0 bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+      <div className="max-h-[600px] panel overflow-auto !rounded-md">
+        <table className="table-dark w-full min-w-[820px] text-xs">
+          <thead className="sticky top-0 ">
             <tr>
               {[
                 "Gene",
@@ -90,7 +90,7 @@ export default function NominationsPage() {
                 "Direct eQTL PP4",
                 "Links",
               ].map((h) => (
-                <th key={h} className="px-2 py-1.5 text-left font-medium">
+                <th key={h} className="px-2 py-2 text-left">
                   {h}
                 </th>
               ))}
@@ -100,7 +100,7 @@ export default function NominationsPage() {
             {rows.map((n, i) => (
               <tr
                 key={`${n.locusId}-${n.gene}-${i}`}
-                className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/60 dark:hover:bg-zinc-900"
+                className=""
               >
                 <td className="px-2 py-1 font-medium italic">
                   {n.symbol ?? n.gene}
@@ -108,7 +108,7 @@ export default function NominationsPage() {
                 <td className="px-2 py-1">
                   <Link
                     href={`/locus/${n.locusId}/`}
-                    className="text-blue-700 hover:underline dark:text-blue-400"
+                    className="lnk"
                   >
                     {n.locusId}
                   </Link>
@@ -135,7 +135,7 @@ export default function NominationsPage() {
                 </td>
                 <td className="px-2 py-1">
                   <a
-                    className="text-blue-700 hover:underline dark:text-blue-400"
+                    className="lnk"
                     href={`https://platform.opentargets.org/target/${n.gene}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -144,7 +144,7 @@ export default function NominationsPage() {
                   </a>{" "}
                   {n.symbol && (
                     <a
-                      className="text-blue-700 hover:underline dark:text-blue-400"
+                      className="lnk"
                       href={`https://www.genecards.org/cgi-bin/carddisp.pl?gene=${n.symbol}`}
                       target="_blank"
                       rel="noopener noreferrer"

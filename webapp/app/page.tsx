@@ -9,9 +9,11 @@ import type { Attribution } from "@/lib/types";
 
 function Tile({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-2xl font-semibold tabular-nums">{value}</div>
-      <div className="mt-1 text-xs text-zinc-500">{label}</div>
+    <div className="panel p-5">
+      <div className="font-display text-3xl text-[var(--gold-bright)]">
+        {value}
+      </div>
+      <div className="kicker mt-2 leading-4">{label}</div>
     </div>
   );
 }
@@ -21,12 +23,13 @@ export default function Dashboard() {
   const explained = summary.nLoci - summary.nUnexplained;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <section>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Why don&apos;t schizophrenia risk loci colocalize with brain eQTLs?
+        <h1 className="font-display text-3xl leading-tight text-[var(--ink)]">
+          Why do schizophrenia risk loci <strong>not</strong> colocalize with
+          brain eQTLs?
         </h1>
-        <p className="mt-2 max-w-3xl text-sm text-zinc-600 dark:text-zinc-300">
+        <p className="mt-3 max-w-3xl text-sm font-light leading-6 text-[var(--ink-dim)]">
           281 genome-wide significant loci from the PGC3 schizophrenia GWAS,
           tested for shared causal variants against six molecular channels:
           bulk expression (14 brain datasets), fine-mapped multi-signal
@@ -36,9 +39,9 @@ export default function Dashboard() {
         </p>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Tile
-          value={`${Math.round((summary.stage1Fractions.any_brain.fraction) * 100)}%`}
+          value={`${Math.round(summary.stage1Fractions.any_brain.fraction * 100)}%`}
           label="loci with any bulk brain eQTL colocalization (PP4 > 0.8)"
         />
         <Tile
@@ -55,23 +58,23 @@ export default function Dashboard() {
         />
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-2">
+      <section className="grid gap-10 lg:grid-cols-2">
         <div>
-          <h2 className="mb-2 text-sm font-semibold">
+          <h2 className="kicker mb-3 !text-[var(--gold)]">
             Sequential attribution across channels
           </h2>
           <Waterfall summary={summary} selected={sel} onSelect={setSel} />
         </div>
         <div>
-          <h2 className="mb-2 text-sm font-semibold">
-            Evidence matrix: best PP4 per locus and channel
+          <h2 className="kicker mb-3 !text-[var(--gold)]">
+            Evidence matrix · best PP4 per locus and channel
           </h2>
           <EvidenceHeatmap loci={loci} filter={sel} />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold">All loci</h2>
+        <h2 className="kicker mb-3 !text-[var(--gold)]">All loci</h2>
         <LocusTable loci={loci} filter={sel} />
       </section>
     </div>

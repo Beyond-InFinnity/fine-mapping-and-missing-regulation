@@ -8,14 +8,14 @@ import type { Attribution, ChannelKey, Locus } from "@/lib/types";
 type SortKey = "pos" | "topP" | ChannelKey;
 
 function Pp4Cell({ v }: { v: number | null }) {
-  if (v === null) return <td className="px-2 py-1 text-zinc-400">–</td>;
+  if (v === null) return <td className="px-2 py-1.5 text-[var(--muted)]">–</td>;
   const strong = v >= 0.8;
   return (
     <td
-      className={`px-2 py-1 tabular-nums ${
+      className={`px-2 py-1.5 tabular-nums ${
         strong
-          ? "font-semibold text-blue-700 dark:text-blue-400"
-          : "text-zinc-600 dark:text-zinc-300"
+          ? "font-semibold text-[var(--gold-bright)]"
+          : "text-[var(--ink-dim)]"
       }`}
     >
       {v.toFixed(2)}
@@ -65,7 +65,7 @@ export default function LocusTable({
 
   const th = (key: SortKey, label: string) => (
     <th
-      className="cursor-pointer select-none px-2 py-1.5 text-left font-medium hover:text-zinc-900 dark:hover:text-white"
+      className="cursor-pointer select-none px-2 py-2 text-left hover:text-[var(--gold)]"
       onClick={() => {
         if (sort === key) setAsc(!asc);
         else {
@@ -81,64 +81,60 @@ export default function LocusTable({
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-4">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search locus, rsID, or gene…"
-          className="w-64 rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-72 rounded border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm font-light text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-[var(--gold)] focus:outline-none"
         />
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs font-light text-[var(--muted)]">
           {rows.length} of {loci.length} loci
           {filter ? ` · attribution: ${attrMeta(filter).label}` : ""}
         </span>
       </div>
-      <div className="max-h-[480px] overflow-auto rounded border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[760px] text-xs">
-          <thead className="sticky top-0 bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+      <div className="panel max-h-[520px] overflow-auto !rounded-md">
+        <table className="table-dark w-full min-w-[780px] text-xs">
+          <thead className="sticky top-0 z-10">
             <tr>
-              <th className="px-2 py-1.5 text-left font-medium">Locus</th>
+              <th className="px-2 py-2 text-left">Locus</th>
               {th("pos", "Position")}
               {th("topP", "GWAS p")}
               {CHANNELS.map((c) => th(c.key, c.label.split(" ")[0]))}
-              <th className="px-2 py-1.5 text-left font-medium">
-                Attribution
-              </th>
-              <th className="px-2 py-1.5 text-left font-medium">Top gene</th>
+              <th className="px-2 py-2 text-left">Attribution</th>
+              <th className="px-2 py-2 text-left">Top gene</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="font-light">
             {rows.map((l) => (
-              <tr
-                key={l.id}
-                className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/60 dark:hover:bg-zinc-900"
-              >
-                <td className="px-2 py-1">
-                  <Link
-                    href={`/locus/${l.id}/`}
-                    className="font-medium text-blue-700 hover:underline dark:text-blue-400"
-                  >
+              <tr key={l.id}>
+                <td className="px-2 py-1.5">
+                  <Link href={`/locus/${l.id}/`} className="lnk font-normal">
                     {l.id}
                   </Link>
                 </td>
-                <td className="px-2 py-1 tabular-nums text-zinc-500">
+                <td className="px-2 py-1.5 tabular-nums text-[var(--muted)]">
                   chr{l.chrom}:{(l.pos / 1e6).toFixed(2)} Mb
                 </td>
-                <td className="px-2 py-1 tabular-nums text-zinc-500">
+                <td className="px-2 py-1.5 tabular-nums text-[var(--muted)]">
                   {l.topP.toExponential(0)}
                 </td>
                 {CHANNELS.map((c) => (
                   <Pp4Cell key={c.key} v={l.channels[c.key]} />
                 ))}
-                <td className="px-2 py-1">
+                <td className="px-2 py-1.5">
                   <span
-                    className="inline-block rounded-full px-2 py-0.5 text-[10px] text-white"
-                    style={{ background: attrMeta(l.attribution).color }}
+                    className="inline-block rounded-full px-2 py-0.5 text-[10px] font-normal"
+                    style={{
+                      background: `${attrMeta(l.attribution).color}22`,
+                      color: attrMeta(l.attribution).color,
+                      border: `1px solid ${attrMeta(l.attribution).color}55`,
+                    }}
                   >
                     {attrMeta(l.attribution).label}
                   </span>
                 </td>
-                <td className="px-2 py-1 italic">
+                <td className="px-2 py-1.5 italic text-[var(--ink-dim)]">
                   {l.topNomination?.gene ?? l.bestBulkGene ?? "–"}
                 </td>
               </tr>

@@ -34,8 +34,8 @@ export default function RegionalPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Regional association plots</h1>
-        <p className="mt-1 max-w-3xl text-sm text-zinc-600 dark:text-zinc-300">
+        <h1 className="font-display text-3xl">Regional association plots</h1>
+        <p className="mt-1 max-w-3xl text-sm text-[var(--ink-dim)]">
           Three exemplar loci, one per major result. Hover any point for
           position, p-value, and LD to the lead variant; toggle tracks with
           the checkboxes.
@@ -48,18 +48,18 @@ export default function RegionalPage() {
             onClick={() => setTab(e.id)}
             className={`rounded-full border px-3 py-1 text-sm ${
               tab === e.id
-                ? "border-blue-600 bg-blue-600 text-white"
-                : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                ? "border-[var(--gold)] bg-[var(--gold)] text-[#0a0e17] font-medium"
+                : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-dim)] hover:border-[var(--gold)]"
             }`}
           >
             {e.tab}
           </button>
         ))}
       </div>
-      <p className="max-w-3xl text-sm text-zinc-600 dark:text-zinc-300">
+      <p className="max-w-3xl text-sm text-[var(--ink-dim)]">
         {ex.blurb}
       </p>
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="panel p-5">
         <RegionalPlot src={ex.src} key={ex.id} />
       </div>
     </div>
