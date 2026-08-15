@@ -65,6 +65,7 @@ export default function LocusTable({
 
   const th = (key: SortKey, label: string) => (
     <th
+      key={key}
       className="cursor-pointer select-none px-2 py-2 text-left hover:text-[var(--gold)]"
       onClick={() => {
         if (sort === key) setAsc(!asc);
