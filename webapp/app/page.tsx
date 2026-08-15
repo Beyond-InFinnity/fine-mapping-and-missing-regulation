@@ -10,10 +10,12 @@ import type { Attribution } from "@/lib/types";
 function Tile({ value, label }: { value: string; label: string }) {
   return (
     <div className="panel p-5">
-      <div className="font-display text-3xl text-[var(--gold-bright)]">
+      <div className="text-[1.75rem] font-semibold tabular-nums leading-none text-[var(--gold-bright)]">
         {value}
       </div>
-      <div className="kicker mt-2 leading-4">{label}</div>
+      <div className="mt-2.5 text-xs font-light leading-4 text-[var(--muted)]">
+        {label}
+      </div>
     </div>
   );
 }

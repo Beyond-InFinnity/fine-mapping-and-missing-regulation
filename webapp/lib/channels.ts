@@ -27,13 +27,13 @@ export const attrMeta = (a: Attribution) =>
   ATTRIBUTIONS.find((x) => x.key === a) ?? ATTRIBUTIONS[6];
 
 export const LD_COLORS: Record<number, string> = {
-  5: "#7b2d8b",
+  5: "#c9b8e2",
   4: "#d43f3a",
   3: "#eea236",
   2: "#5cb85c",
   1: "#46b8da",
-  0: "#2c3e50",
-  [-1]: "#b8b8b8",
+  0: "#6b7d99",
+  [-1]: "#454f63",
 };
 
 export const LD_LABELS: Record<number, string> = {

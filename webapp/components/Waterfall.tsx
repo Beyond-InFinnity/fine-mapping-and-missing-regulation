@@ -13,13 +13,13 @@ const STEP_TO_ATTR: Record<string, Attribution> = {
 };
 
 const SHORT: Record<Attribution, string[]> = {
-  bulk_expression: ["BULK", "EXPRESSION"],
-  susie_rescue: ["MULTI-SIGNAL", "RESCUE"],
-  single_cell: ["SINGLE-CELL", "eQTL"],
-  fetal_eqtl: ["FETAL", "eQTL"],
-  splicing: ["SPLICING", ""],
-  methylation: ["METHYLATION", ""],
-  unexplained: ["UNEXPLAINED", ""],
+  bulk_expression: ["Bulk", "expression"],
+  susie_rescue: ["Multi-signal", "rescue"],
+  single_cell: ["Single-cell", "eQTL"],
+  fetal_eqtl: ["Fetal", "eQTL"],
+  splicing: ["Splicing", ""],
+  methylation: ["Methylation", ""],
+  unexplained: ["Unexplained", ""],
 };
 
 export default function Waterfall({
@@ -146,9 +146,9 @@ export default function Waterfall({
               y={H - pad.b + 22}
               textAnchor="middle"
               fill={active ? "var(--ink-dim)" : "var(--muted)"}
-              fontSize={11}
+              fontSize={12.5}
               fontWeight={500}
-              letterSpacing={0.6}
+              letterSpacing={0.2}
             >
               {SHORT[b.attr][0]}
             </text>

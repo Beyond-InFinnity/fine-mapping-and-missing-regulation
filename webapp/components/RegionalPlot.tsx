@@ -78,7 +78,7 @@ function Track({
         ctx.lineTo(x - 5, y);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = "white";
+        ctx.strokeStyle = "#0a0e17";
         ctx.stroke();
       } else {
         ctx.beginPath();
@@ -204,7 +204,7 @@ export default function RegionalPlot({ src }: { src: string }) {
             </label>
           ))}
         <span className="ml-auto flex flex-wrap gap-2 text-[10px] text-[var(--muted)]">
-          {[4, 3, 2, 1, 0].map((b) => (
+          {[4, 3, 2, 1, 0, -1].map((b) => (
             <span key={b} className="flex items-center gap-1">
               <span
                 className="inline-block h-2 w-2 rounded-full"
@@ -245,7 +245,7 @@ export default function RegionalPlot({ src }: { src: string }) {
                 y={y}
                 width={Math.max(2, Math.min(x2, 800 - PAD.r) - Math.max(PAD.l, x1))}
                 height={4}
-                className="fill-[var(--muted)]"
+                className="fill-[#98a2b8]"
               />
               <text
                 x={(Math.max(PAD.l, x1) + Math.min(x2, 800 - PAD.r)) / 2}

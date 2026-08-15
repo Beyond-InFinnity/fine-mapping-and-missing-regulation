@@ -56,7 +56,7 @@ export default function EvidenceHeatmap({
         {CHANNELS.map((c) => (
           <div
             key={c.key}
-            className="text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]"
+            className="text-[11px] text-[var(--muted)]"
             style={{ width: `${(100 / CHANNELS.length).toFixed(2)}%` }}
           >
             {c.label}

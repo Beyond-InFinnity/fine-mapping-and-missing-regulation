@@ -48,9 +48,9 @@ body {
 }
 
 .kicker {
-  font-size: 0.65rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  font-weight: 500;
   color: var(--muted);
 }
 
@@ -66,9 +66,8 @@ body {
   background: var(--panel-2);
 }
 .table-dark thead th {
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
   font-weight: 500;
   color: var(--muted);
 }
