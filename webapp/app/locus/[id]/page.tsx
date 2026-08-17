@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Explainer, { ExplainerSection } from "@/components/Explainer";
+import Term from "@/components/Term";
 import { CHANNELS, attrMeta } from "@/lib/channels";
 import { fmtP, fmtPos, loci, locusById, nominationsByLocus } from "@/lib/data";
 
@@ -83,6 +85,23 @@ export default async function LocusPage({
           <p className="mt-2 text-[11px] text-[var(--muted)]">
             Vertical line marks the PP4 = 0.8 threshold.
           </p>
+          <Explainer title="How to read these bars">
+            <ExplainerSection label="What this data is">
+              The strongest <Term k="colocalization">colocalization</Term>{" "}
+              between this locus&rsquo;s GWAS signal and each evidence
+              channel, taking the best <Term k="pp4">PP4</Term> across every
+              dataset in the channel.
+            </ExplainerSection>
+            <ExplainerSection label="How to read it">
+              Bars fill toward 1. Solid bars pass the 0.8 threshold used
+              sitewide; faded bars fall short; a dash means no dataset in the
+              channel yielded a valid test here, usually because too few
+              variants were shared between the studies. Treat a passing bar
+              as evidence that the GWAS signal and that molecular trait
+              plausibly share one causal variant, not as proof that the trait
+              causes the disease.
+            </ExplainerSection>
+          </Explainer>
         </div>
 
         <div className="panel p-5 text-sm">
@@ -110,6 +129,22 @@ export default async function LocusPage({
               </a>
             </dd>
           </dl>
+          <Explainer title="What these annotations mean">
+            <ExplainerSection label="Reading guide">
+              <Term k="credible-set">Credible sets</Term> come from{" "}
+              <Term k="susie">SuSiE</Term> fine-mapping of the GWAS: each is
+              the smallest set of variants 95% likely to contain the causal
+              variant for one independent signal, so a count above one means
+              this locus carries multiple signals. The two chromatin numbers
+              give the fraction of credible-set probability falling in{" "}
+              <Term k="regulatory-chromatin">regulatory chromatin</Term>{" "}
+              (enhancer or promoter states) of fetal versus adult brain; a
+              high fetal value beside a low adult one hints at a
+              developmental window. The best bulk gene and best single-cell
+              type are the strongest direct expression matches, listed even
+              when they fall below threshold.
+            </ExplainerSection>
+          </Explainer>
         </div>
       </section>
 
@@ -170,6 +205,21 @@ export default async function LocusPage({
             </table>
           </div>
         )}
+        <Explainer title="How to read these nominations">
+          <ExplainerSection label="Reading guide">
+            Each row is a{" "}
+            <Term k="methylation-chain">methylation chain</Term>: the GWAS
+            signal colocalizes with a CpG&rsquo;s methylation signal, and the
+            same methylation signal colocalizes with this gene&rsquo;s
+            expression in independent data. The chain score is the weaker of
+            the two links, and the <Term k="tier">tier</Term> bands it (high
+            means at least 0.8). CpG-to-<Term k="tss">TSS</Term> distance is
+            a plausibility check, since regulatory contacts weaken with
+            distance, and the direct eQTL PP4 column shows what direct
+            expression testing said at this locus. Nominations are ranked
+            hypotheses for follow-up, not confirmed target genes.
+          </ExplainerSection>
+        </Explainer>
       </section>
     </div>
   );

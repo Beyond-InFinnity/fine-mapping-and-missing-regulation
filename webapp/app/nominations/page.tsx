@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Explainer, {
+  ExplainerSection,
+  Takeaways,
+} from "@/components/Explainer";
+import Term from "@/components/Term";
 import { nominations } from "@/lib/data";
 
 export default function NominationsPage() {
@@ -31,11 +36,58 @@ export default function NominationsPage() {
       <div>
         <h1 className="font-display text-3xl">Gene nominations</h1>
         <p className="mt-1 max-w-3xl text-sm text-[var(--ink-dim)]">
-          Candidate genes linked to risk loci through the methylation chain:
-          chain score = min(GWAS↔CpG PP4, CpG↔gene PP4). Expression-orphan
-          rows are loci with no direct eQTL colocalization anywhere. Distant
-          CpG-to-TSS nominations warrant caution; use the filter.
+          Candidate genes linked to risk loci through the{" "}
+          <Term k="methylation-chain">methylation chain</Term>: chain score =
+          min(GWAS↔CpG <Term k="pp4">PP4</Term>, CpG↔gene PP4).{" "}
+          <Term k="expression-orphan">Expression-orphan</Term> rows are loci
+          with no direct eQTL colocalization anywhere. Distant CpG-to-
+          <Term k="tss">TSS</Term> nominations warrant caution; use the
+          filter.
         </p>
+        <Explainer title="How to read this table">
+          <ExplainerSection label="What this data is">
+            Every gene reachable from a risk locus in two colocalization
+            steps: the GWAS signal shares a causal variant with a CpG&rsquo;s
+            methylation signal (GWAS↔CpG), and the same methylation signal
+            shares a causal variant with the gene&rsquo;s expression in
+            independent data (CpG↔gene). The chain score is the weaker of
+            the two links, so a chain is only as strong as its weakest step.
+          </ExplainerSection>
+          <ExplainerSection label="How to read it">
+            High <Term k="tier">tier</Term> means both links reach 0.8, the
+            same threshold used for direct colocalization elsewhere on the
+            site; suggestive means the weaker link falls between 0.5 and 0.8.
+            The orphan column flags loci where no expression test of any kind
+            succeeded, which is where these chains matter most. The direct
+            eQTL PP4 column shows what direct testing said about this gene,
+            and the CpG&ndash;TSS column gives the distance from the
+            methylation site to the gene&rsquo;s start; the checkbox filter
+            keeps chains within 100 kb.
+          </ExplainerSection>
+          <ExplainerSection label="What to take away, and what not to">
+            <Takeaways
+              yes={[
+                <>
+                  High-tier chains at orphan loci are specific, testable
+                  hypotheses for which gene a risk locus regulates, at loci
+                  where expression data offered nothing.
+                </>,
+              ]}
+              no={[
+                <>
+                  A chain does not prove the gene is causal, nor that
+                  methylation mediates the effect; both links could reflect
+                  the same regulatory element without a causal path through
+                  the gene.
+                </>,
+                <>
+                  Chains whose CpG lies far from the gene&rsquo;s start are
+                  weaker hypotheses; distance is a prior, not a verdict.
+                </>,
+              ]}
+            />
+          </ExplainerSection>
+        </Explainer>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
