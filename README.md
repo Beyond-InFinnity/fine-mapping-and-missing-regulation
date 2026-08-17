@@ -1,54 +1,137 @@
 # Fine-mapping and the missing regulation
 
-Exploratory research pipeline on the variant-to-gene gap in schizophrenia GWAS:
-why do PGC3 SCZ loci colocalize with brain eQTLs less often than expected?
+Genome-wide association studies have mapped hundreds of DNA regions that
+raise schizophrenia risk, yet most of those regions cannot be matched to
+the gene they act through. This repository quantifies that gap on the 281
+analysable loci of the PGC3 schizophrenia GWAS, tests six candidate
+explanations within one pipeline, and finds that most of the "missing"
+loci sit on regulatory DNA whose activity current expression catalogs do
+not capture. Everything derives from public summary statistics; no
+controlled-access data are used, and every number regenerates from raw
+downloads.
 
-Everything runs on **public summary statistics** — no controlled data.
+**Interactive explorer: <https://scz.nerv-analytic.ai>** covering all 281
+loci, with a plain-language reader's guide, a glossary, and a
+"how to read this" panel on every figure.
 
 ## Headline findings
 
-Across 281 analysable PGC3 SCZ loci (PP4 > 0.8 throughout):
+All colocalization at PP4 > 0.8 unless stated otherwise.
 
-- Only **9.6%** colocalize with GTEx cortex eQTLs; **32%** with any of 14 bulk
-  brain expression datasets — the "missing regulation" gap replicates.
-- eQTL power scales colocalization (OR 2.5 per 10× N) but saturates ≈25%;
-  multi-signal coloc-SuSiE reclassifies ~26% of single-variant calls in
-  *both* directions; heterogeneity is not enriched among misses.
-- Splicing QTLs add 47 loci; **brain methylation (Brain-mMeta meQTL,
-  n≈1,160) colocalizes at 193/281 loci — including 118 of the 191
-  expression-orphan loci** (6× the per-test rate of expression; robust to
-  PP4 > 0.95). The unexplained core shrinks from 57% to **23% (65 loci)**.
-- Interpretation: most "missing regulation" loci are epigenetically active
-  in adult brain; current eQTL catalogs miss the transcriptional readout,
-  not the regulation. A meQTL→eQTL transitive chain nominates target genes
-  for the methylation-explained loci.
+- **The gap replicates.** 9.6% of loci colocalize with GTEx cortex eQTLs;
+  32% with at least one of 14 bulk brain expression datasets. The failures
+  are not explained by an absence of eQTLs: 94% of non-colocalizing loci
+  harbor a strong local eQTL for some gene, but the eQTL and the risk
+  signal favor different variants.
+- **Power helps, then saturates.** Odds of colocalization rise 2.5-fold
+  per tenfold increase in eQTL sample size (p = 3.8e-6) but flatten near
+  25% for single cortex datasets.
+- **Single-variant calls are unstable, symmetrically.** 40% of loci carry
+  two or more independent signals; pairing signals individually with
+  coloc-SuSiE reclassifies 27% of single-variant calls in each direction.
+  Single-cell, fetal, and splicing QTLs together add 19 loci.
+- **Methylation is the outlier channel.** Brain meQTLs (Brain-mMeta,
+  n of approximately 1,160 brains) colocalize at 193 of 281 loci (69%),
+  including 118 of the 191 loci without bulk expression colocalization.
+  The per-test rate is six times that of expression (1.22% versus 0.21%),
+  and the excess holds at PP4 > 0.9 and > 0.95.
+- **Sequential attribution across all six channels** (bulk expression,
+  multi-signal rescue, single-cell, fetal, splicing, methylation) explains
+  90 + 23 + 6 + 4 + 9 + 84 = 216 of 281 loci (77%), leaving 65 (23%)
+  unexplained by every tested channel.
+- **A methylation-to-expression chain** (GWAS to CpG, CpG to gene, scored
+  by the weaker link) nominates candidate genes at 44 loci that lack
+  direct eQTL support anywhere.
 
-Full narrative: `report/report.qmd` (rendered HTML self-contained) and the
-staged reports in `docs/`.
+Interpretation, stated with the same care as in the manuscript: most risk
+loci without expression colocalization are nonetheless active on brain
+regulatory DNA, so the shortfall lies mostly with current expression
+catalogs rather than with the regulatory hypothesis itself.
+Colocalization demonstrates a shared causal variant, not causation, and
+the chained nominations are hypotheses for functional follow-up, not
+confirmed target genes.
 
-## Stages
+## Artifacts
 
-- **Stage 0 — Feasibility audit** ([docs/stage0_audit.md](docs/stage0_audit.md)) ✅
-- **Stage 1 — Replication baseline** ([docs/stage1_report.md](docs/stage1_report.md)) ✅ — 32% of 281 loci colocalize with ≥1 of 14 brain eQTL datasets
-- **Stage 2 — Dissecting the miss** ([docs/stage2_report.md](docs/stage2_report.md)) ✅ — power/heterogeneity/cell-type/fetal ledger; 57% remain unexplained
-- **Stage 3 — Writeup** ([report/report.qmd](report/report.qmd) → `quarto render`) ✅ — self-contained HTML, every number computed from results files
+| Artifact | Location |
+| --- | --- |
+| Interactive explorer (live) | <https://scz.nerv-analytic.ai> (source in `webapp/`) |
+| Manuscript draft and figures | `manuscript/` |
+| Self-contained analysis report | `report/report.qmd` (render with `quarto render`) |
+| Staged reports and results snapshots | `docs/` |
+| Final ledger and gene nominations | `results/final/` (regenerated by the pipeline) |
 
-Caveat for reruns: Snakemake tracks rule shell strings, not the external
-scripts they call — after editing a `scripts/*.py|R` file, force downstream
-regeneration with `--forcerun <rule>`.
+## Reproducing
+
+```bash
+conda env create -f envs/scz-coloc-audit.lock.yml
+conda activate scz-coloc-audit
+
+# Stage 1 baseline (default target)
+snakemake --cores 8 all
+
+# Full sequential ledger and gene nominations
+snakemake --cores 8 final_ledger nominate_genes
+
+# Manuscript figure set and the rendered report
+snakemake --cores 8 figure_set render_report
+```
+
+Two caveats for reruns. Snakemake tracks rule definitions, not the
+external scripts they call; after editing anything in `scripts/`, force
+downstream regeneration with `--forcerun <rule>`. Several sources stream
+remotely (eQTL Catalogue regions arrive as tabix queries over HTTP), so
+first runs need network access and their runtime depends on it.
+
+The webapp builds separately: `cd webapp && npm install && npm run build`
+produces a fully static export in `webapp/out/` (290 pages, data baked at
+build time from `webapp/data/` and `webapp/public/data/`, which the
+pipeline and `scripts/export_webapp_data.py` populate from `results/`).
+Deployment notes are in `webapp/README.md`.
+
+## Stage history
+
+- **Stage 0, feasibility audit** ([docs/stage0_audit.md](docs/stage0_audit.md))
+- **Stage 1, replication baseline** ([docs/stage1_report.md](docs/stage1_report.md)): 32% of 281 loci colocalize with at least one of 14 bulk brain eQTL datasets
+- **Stage 2, dissecting the miss** ([docs/stage2_report.md](docs/stage2_report.md)): power, heterogeneity, cell type, and fetal ledger; 57% remained unexplained at this stage
+- **Stage 3, writeup** ([report/report.qmd](report/report.qmd)): self-contained HTML, every number computed from results files
+- **Stage 4, chromatin and robustness** ([docs/stage4_robustness_report.md](docs/stage4_robustness_report.md)): splicing and methylation channels, EUR-only sensitivity (94 to 96% agreement), LD-mismatch diagnostics; unexplained core reduced to 23%
+- **Release**: gene nominations, manuscript draft, figure set, and the public explorer
+
+## Data sources
+
+PGC3 schizophrenia GWAS (Trubetskoy et al. 2022); GTEx v8 brain eQTLs and
+sQTLs via the eQTL Catalogue; MetaBrain cortex-EUR meta-analysis; BrainSeq,
+CommonMind, and ROSMAP via the eQTL Catalogue; Bryois et al. 2022
+single-cell eQTLs (8 brain cell types); Walker et al. 2019 fetal cortex
+eQTLs; Brain-mMeta meQTLs (Qi et al. 2018); Hannon et al. 2016 fetal brain
+mQTLs (overlap analysis only); Roadmap chromHMM segmentations; 1000 Genomes
+GRCh38 EUR LD panel. Full citations with DOIs are in
+`manuscript/manuscript.md` and on the explorer's About page.
 
 ## Environments
 
-- `envs/scz-coloc-audit.lock.yml` — main env (R 4.3.3, susieR 0.14.2, coloc 5.2.3, snakemake 9.25.1, htslib, plink/plink2, bcftools)
-- PolyFun runs in its own pinned env (`polyfun.yml` from the upstream repo; Python 3.8)
-- FINEMAP 1.4.2 and fastENLOC 3.1 are fetched/built by pipeline rules (licenses prevent vendoring)
+- `envs/scz-coloc-audit.lock.yml`: pinned main environment (R 4.3.3,
+  susieR 0.14.2, coloc 5.2.3, snakemake 9.25.1, htslib, plink/plink2,
+  bcftools)
+- `envs/scz-coloc.yml`: the unpinned specification the lock file was
+  solved from
 
 ## Layout
 
 ```
-config/    config-driven paths and parameters
-docs/      audit + design notes
-envs/      pinned conda environments
-scripts/   analysis scripts called by workflow rules
-workflow/  Snakemake pipeline
+config/      config-driven paths, parameters, and the dataset registry (TSV)
+data/        raw public downloads (populated by pipeline rules)
+docs/        staged reports, audits, and results snapshots
+envs/        pinned conda environments
+manuscript/  manuscript draft and publication figures
+report/      Quarto analysis report
+results/     pipeline outputs, including results/final/
+scripts/     analysis scripts called by workflow rules
+webapp/      Next.js static explorer (deployed at scz.nerv-analytic.ai)
+workflow/    Snakemake pipeline
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
